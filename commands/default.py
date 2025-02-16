@@ -5,9 +5,9 @@ from aiogram.types import BotCommandScopeDefault
 
 async def set_default_commands(bot: Bot):
     commands = [
-        BotCommand(command="/start", description="Перезапустить бота"),
-        BotCommand(command="/help", description="Помощь"),
-        BotCommand(command="/about", description="О боте"),
+        BotCommand(command="/start", description="🔁 Перезапустить бота"),
+        BotCommand(command="/help", description="⭐ Помощь"),
+        BotCommand(command="/about", description="ℹ️ О боте"),
 
         ]
     await bot.set_my_commands(commands=commands, scope=BotCommandScopeDefault())
