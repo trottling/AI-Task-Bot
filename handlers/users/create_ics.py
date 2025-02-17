@@ -1,9 +1,9 @@
 from aiogram.types import Message
 
-async def create_ics_command(message: Message):
-    if message.text in ["/start", "/help", "/about"]:
-        return
+from deepseek.worker import ask_ai
 
+
+async def create_ics_command(message: Message):
     if len(message.text) < 10:
         await message.answer("Слишком маленькое сообщение")
         return
@@ -12,4 +12,8 @@ async def create_ics_command(message: Message):
         await message.answer("Слишком большое сообщение")
         return
 
-    await message.answer("Отправьте сообщение с одним или несколькими мероприятиями, например:\n\n20 января, вождение в 10 часов, с собой взять паспорт\n\nНажмите на полученный файл и добавьте в календарь")
+    await message.answer("🔄 Генерация ивента...")
+
+    resp = await ask_ai(message.text)
+
+    await message.answer()
