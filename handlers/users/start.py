@@ -8,6 +8,6 @@ async def start_command(message: Message):
     telegram_id = message.from_user.id
     try:
         db.add_user(full_name=full_name, telegram_id=telegram_id)
-        await message.answer(text=f"👋 Привет, {full_name}, нажми /help что бы понять как работает бот")
     except:
         pass
+    await message.answer(text=f"👋 Привет, {full_name}, нажми /help что бы понять как работает бот")

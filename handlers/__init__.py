@@ -12,7 +12,7 @@ async def register_handlers(dp: Dispatcher, ADMINS):
 
     dp.message.register(users.about.about_command, Command("about"))
 
-    dp.message.register(users.create_ics.create_ics_command, Command("about"))
+    dp.message.register(users.create_ics.create_ics_command)
 
     dp.message.register(users.admin.is_admin, Command("admin"), IsAdminFilter(ADMINS))
     dp.message.register(users.admin.users_count, F.Text("Стата по юзерам"), IsAdminFilter(ADMINS))
