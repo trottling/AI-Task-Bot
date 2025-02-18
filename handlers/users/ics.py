@@ -27,6 +27,7 @@ async def create_ics_command(message: Message, state: FSMContext):
         return
 
     await message.answer("🔄 Генерация ивента...")
+    await state.clear()
 
     try:
         resp = await ask_ai(text)
