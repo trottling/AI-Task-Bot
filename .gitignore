@@ -169,3 +169,16 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+.idea/.gitignore
+.idea/AI-Task-Bot.iml
+.idea/dataSources.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/sqldialects.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
+.gitignore
+.cursorignore
+.gitignore
+.gitignore

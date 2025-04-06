@@ -1,23 +1,16 @@
+from aiogram.types import Message
 import json
 import os
 
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message
-
 from ai_utils.worker import ask_ai
+
 from ics_util.generator import generate_ics
 from loader import bot
 
-class TaskCreation(StatesGroup):
-    waiting_for_text = State()
 
-async def start_ics_creation(message: Message, state: FSMContext):
+async def create_ics_command(message: Message):
     await message.answer("Отправьте сообщение с задачами:")
-    await state.set_state(TaskCreation.waiting_for_text)
-
-async def create_ics_command(message: Message, state: FSMContext):
-    text = message.text.strip()
+    text = message.text
 
     if len(text) < 10:
         await message.answer("Слишком маленькое сообщение")
@@ -28,7 +21,6 @@ async def create_ics_command(message: Message, state: FSMContext):
         return
 
     await message.answer("🔄 Генерация ивента...")
-    await state.clear()
 
     try:
         resp = await ask_ai(text)
