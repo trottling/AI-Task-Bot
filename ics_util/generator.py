@@ -16,6 +16,7 @@ def generate_ics(event_task: dict) -> Optional[str]:
     try:
         calendar = Calendar()
         event = Event()
+        event.created = datetime.datetime.utcnow()
 
         # Required fields
         if not event_task.get("title"):
