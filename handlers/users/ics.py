@@ -3,10 +3,11 @@ import os
 
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 
 from ai_utils.worker import ask_ai
 from ics_util.generator import generate_ics
+from keyboards.user import user_kb
 from loader import bot
 
 logger = logging.getLogger(__name__)
@@ -22,42 +23,42 @@ async def create_ics_command(message: Message, state: FSMContext):
     text = message.text.strip()
 
     if len(text) < 10:
-        await message.answer("Слишком маленькое сообщение")
+        await message.answer("Слишком маленькое сообщение", reply_markup=user_kb)
         return
 
     if len(text) > 500:
-        await message.answer("Слишком большое сообщение")
+        await message.answer("Слишком большое сообщение", reply_markup=user_kb)
         return
 
-    await message.answer("🔄 Генерация ивента...")
+    await message.answer("🔄 Генерация ивентов...")
     await state.clear()
 
     try:
-        resp = await ask_ai(text, message.from_user.id)
+        resp = await ask_ai(text)
     except Exception:
         logger.exception("AI request failed")
-        await message.answer("❌ Не удалось создать список задач: Нет ответа")
+        await message.answer("❌ Не удалось создать список задач: Нет ответа", reply_markup=user_kb)
         return
 
     if not resp:
-        await message.answer("❌ Не удалось создать список задач: Пустой ответ")
+        await message.answer("❌ Не удалось создать список задач: Пустой ответ", reply_markup=user_kb)
         return
 
     if resp.get("error"):
-        await message.answer(f"❌ Не удалось создать список задач: {resp['error']}")
+        await message.answer(f"❌ Не удалось создать список задач: {resp['error']}", reply_markup=user_kb)
         return
 
     if "events_tasks" not in resp:
-        await message.reply("❌ Не удалось создать список задач: в JSON отсутствует поле 'events_tasks'")
+        await message.reply("❌ Не удалось создать список задач: в JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
         return
 
-    await message.answer(resp.get("response", ""))
+    await message.answer(resp.get("response", ""), reply_markup=user_kb)
 
     for event_task in resp["events_tasks"]:
         ics_filename = generate_ics(event_task)
         if not ics_filename:
             logger.error("Failed to generate ICS file for task: %s", event_task)
-            await message.answer("❌ Не удалось сгенерировать ICS файл для одной из задач")
+            await message.answer("❌ Не удалось сгенерировать ICS файл для одной из задач", reply_markup=user_kb)
             continue
             
         try:
@@ -70,5 +71,5 @@ async def create_ics_command(message: Message, state: FSMContext):
 
 
 async def send_ics_file(chat_id, ics_filename):
-    with open(ics_filename, "rb") as file:
-        await bot.send_document(chat_id, file)
+    file = FSInputFile(ics_filename)
+    await bot.send_document(chat_id, file)

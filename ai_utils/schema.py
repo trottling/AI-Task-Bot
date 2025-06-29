@@ -30,3 +30,12 @@ JSON_SCHEMA = {
     },
     "required": ["error", "response", "events_tasks"],
 }
+
+RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "events_tasks",
+        "description": "Схема данных для списка событий и задач",
+        "schema": JSON_SCHEMA,
+    },
+}

@@ -3,37 +3,32 @@ import json
 import logging
 
 from ai_utils.prompt import PROMPT
-from ai_utils.schema import JSON_SCHEMA
+from ai_utils.schema import RESPONSE_FORMAT
 from config.config import AI_API_MODEL
 from loader import ai_client
 
 logger = logging.getLogger(__name__)
 
 
-async def ask_ai(text: str, user_id: int) -> dict:
-    text = f"{text}\n\nТекущая дата: {datetime.date.today()}"
+async def ask_ai(text: str) -> dict:
+    curr_prompt = PROMPT.format(msg=text, time=datetime.datetime.now())
 
-    response = await ai_client.chat.completions.create(
+    response = await ai_client.completions.create(
         model=AI_API_MODEL,
-        messages=[
-            {"role": "system", "content": PROMPT},
-            {"role": "user", "content": text},
-        ],
+        prompt=curr_prompt,
         temperature=1.3,
         stream=False,
-        user=str(user_id),
-        response_format={"type": "json_schema", "json_schema": JSON_SCHEMA},
-    )
+        response_format=RESPONSE_FORMAT
+        )
 
     try:
-        content = response["message"]["content"]
+        content = response.choices[0].message.content
     except Exception:
         logger.exception("Unexpected AI response format")
-        return {}
+        return { }
 
     try:
         return json.loads(content)
     except Exception:
         logger.exception("JSON parsing failed for AI response")
-        return {}
-
+        return { }
