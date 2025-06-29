@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -34,21 +33,14 @@ async def create_ics_command(message: Message, state: FSMContext):
     await state.clear()
 
     try:
-        resp = await ask_ai(text)
+        resp = await ask_ai(text, message.from_user.id)
     except Exception:
         logger.exception("AI request failed")
         await message.answer("❌ Не удалось создать список задач: Нет ответа")
         return
 
-    if resp == "":
+    if not resp:
         await message.answer("❌ Не удалось создать список задач: Пустой ответ")
-        return
-
-    try:
-        resp = json.loads(resp)
-    except Exception:
-        logger.exception("JSON parsing failed")
-        await message.answer("❌ Не удалось создать список задач: Ошибка загрузки JSON")
         return
 
     if resp.get("error"):
