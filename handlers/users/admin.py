@@ -1,7 +1,10 @@
+import logging
 from aiogram.types import Message
 
 from keyboards.admin import admin_kb
 from loader import db
+
+logger = logging.getLogger(__name__)
 
 
 async def is_admin(message: Message):
