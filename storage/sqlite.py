@@ -37,8 +37,15 @@ class Database:
         return data
 
     def add_user(self, telegram_id: int, full_name: str) -> None:
+        if self.user_exists(telegram_id):
+            logger.info("User %s already exists", telegram_id)
+            return
         sql = "INSERT INTO Users(telegram_id, full_name) VALUES(?, ?);"
         self.execute(sql, (telegram_id, full_name), commit=True)
+
+    def user_exists(self, telegram_id: int) -> bool:
+        sql = "SELECT 1 FROM Users WHERE telegram_id = ? LIMIT 1;"
+        return self.execute(sql, (telegram_id,), fetchone=True) is not None
 
     def count_users(self):
         return self.execute("SELECT COUNT(*) FROM Users;", fetchone=True)
