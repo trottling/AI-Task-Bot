@@ -2,7 +2,7 @@ import datetime
 import logging
 
 from ai_utils.prompt import PROMPT
-from data.config import AI_API_MODEL
+from config.config import AI_API_MODEL
 from loader import ai_client
 
 logger = logging.getLogger(__name__)
