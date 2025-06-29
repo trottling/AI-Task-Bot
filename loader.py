@@ -9,8 +9,14 @@ TOKEN = config.BOT_TOKEN
 AI_API_KEY = config.AI_API_KEY
 AI_API_URL = config.AI_API_URL
 
-if AI_API_URL == "":
+# Если URL не указан, используем значение по умолчанию
+if not AI_API_URL:
     AI_API_URL = None
+else:
+    # Обеспечим наличие окончания /v1 для корректного обращения к API
+    AI_API_URL = AI_API_URL.rstrip("/")
+    if not AI_API_URL.endswith("/v1"):
+        AI_API_URL += "/v1"
 
 ai_client = AsyncOpenAI(api_key=AI_API_KEY, base_url=AI_API_URL)
 router = Router()
