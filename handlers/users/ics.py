@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from aiogram.fsm.context import FSMContext
@@ -8,6 +9,8 @@ from aiogram.types import Message
 from ai_utils.worker import ask_ai
 from ics_util.generator import generate_ics
 from loader import bot
+
+logger = logging.getLogger(__name__)
 
 class TaskCreation(StatesGroup):
     waiting_for_text = State()
@@ -32,8 +35,8 @@ async def create_ics_command(message: Message, state: FSMContext):
 
     try:
         resp = await ask_ai(text)
-    except Exception as e:
-        print(e)
+    except Exception:
+        logger.exception("AI request failed")
         await message.answer("❌ Не удалось создать список задач: Нет ответа")
         return
 
@@ -43,8 +46,8 @@ async def create_ics_command(message: Message, state: FSMContext):
 
     try:
         resp = json.loads(resp)
-    except Exception as e:
-        print(e)
+    except Exception:
+        logger.exception("JSON parsing failed")
         await message.answer("❌ Не удалось создать список задач: Ошибка загрузки JSON")
         return
 
@@ -61,17 +64,17 @@ async def create_ics_command(message: Message, state: FSMContext):
     for event_task in resp["events_tasks"]:
         ics_filename = generate_ics(event_task)
         if not ics_filename:
+            logger.error("Failed to generate ICS file for task: %s", event_task)
             await message.answer("❌ Не удалось сгенерировать ICS файл для одной из задач")
             continue
             
         try:
             await send_ics_file(message.chat.id, ics_filename)
         finally:
-            # Clean up temporary file
             try:
                 os.unlink(ics_filename)
-            except:
-                pass
+            except OSError:
+                logger.exception("Failed to remove temp file %s", ics_filename)
 
 
 async def send_ics_file(chat_id, ics_filename):

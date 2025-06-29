@@ -1,8 +1,11 @@
 import datetime
+import logging
 import uuid
 from typing import Optional
 
 from ics import Calendar, Event
+
+logger = logging.getLogger(__name__)
 
 
 def generate_ics(event_task: dict) -> Optional[str]:
@@ -48,6 +51,6 @@ def generate_ics(event_task: dict) -> Optional[str]:
             f.write(str(calendar))
             return f.name
 
-    except Exception as e:
-        print(f"Error generating ICS: {e}")
+    except Exception:
+        logger.exception("Error generating ICS")
         return None
