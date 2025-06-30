@@ -1,5 +1,3 @@
-"""Утилиты для создания ICS-файлов."""
-
 import datetime
 import logging
 import tempfile
@@ -10,21 +8,20 @@ from icalendar import Calendar, Event
 
 logger = logging.getLogger(__name__)
 
-
 def _create_event(task: dict) -> Event | None:
     """Собрать объект ``Event`` из словаря."""
     title = task.get("title")
     date_str = task.get("date")
     if not title or not date_str:
         return None
-
+     
     try:
-        date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+      date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
         logger.warning("Некорректная дата: %s", date_str)
         return None
-
-    time_str = (task.get("time") or "00:00").strip()
+      
+     time_str = (task.get("time") or "00:00").strip()
     try:
         hour, minute = map(int, time_str.split(":", 1))
     except ValueError:
@@ -46,8 +43,6 @@ def _create_event(task: dict) -> Event | None:
     if location:
         event.add("location", location)
     return event
-
-
 def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
     """Создать ICS-файл и вернуть путь к нему."""
     cal = Calendar()
@@ -67,7 +62,7 @@ def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
 
     if not count:
         return None
-
+      
     try:
         with tempfile.NamedTemporaryFile("wb", suffix=".ics", delete=False) as f:
             f.write(cal.to_ical())
