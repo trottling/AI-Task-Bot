@@ -4,6 +4,7 @@ import uuid
 from typing import Optional
 
 from ics import Calendar, Event
+from ics.grammar.parse import ContentLine
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ def generate_ics(event_task: dict) -> Optional[str]:
     """
     try:
         calendar = Calendar()
+        calendar.extra.append(ContentLine(name="CALSCALE", value="GREGORIAN"))
         event = Event()
         event.created = datetime.datetime.utcnow()
 
@@ -39,8 +41,9 @@ def generate_ics(event_task: dict) -> Optional[str]:
         except ValueError:
             return None
 
-        # Set duration to 1 hour if not specified
-        event.duration = datetime.timedelta(hours=1)
+        # Duration one hour
+        duration = datetime.timedelta(hours=1)
+        event.end = event.begin + duration
 
         calendar.events.add(event)
 
