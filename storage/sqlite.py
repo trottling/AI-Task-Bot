@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
@@ -52,3 +53,11 @@ class Database:
 
     def count_reqs(self):
         return self.execute("SELECT COUNT(*) FROM REQUESTS;", fetchone=True)
+
+    def add_request(self, req_text: str, req_user_id: int, req_resp: str) -> None:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sql = (
+            "INSERT INTO REQUESTS(req_time, req_text, req_user_id, req_resp) "
+            "VALUES(?, ?, ?, ?);"
+        )
+        self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
