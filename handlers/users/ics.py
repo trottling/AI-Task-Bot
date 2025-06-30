@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -8,7 +9,7 @@ from aiogram.types import Message, FSInputFile
 from ai.worker import ask_ai
 from ics_util.generator import generate_ics
 from keyboards.user import user_kb
-from loader import bot
+from loader import bot, db
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ async def create_ics_command(message: Message, state: FSMContext):
 
         try:
             resp = await ask_ai(text)
+            db.add_request(text, message.from_user.id, json.dumps(resp, ensure_ascii=False))
         except Exception:
             logger.exception("AI request failed")
             await message.answer("❌ Не удалось создать список задач: Нет ответа", reply_markup=user_kb)
