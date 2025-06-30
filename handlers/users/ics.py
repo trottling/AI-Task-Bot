@@ -1,16 +1,15 @@
 import logging
-import os
 from datetime import datetime
 import json
 
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message
 
 from ai.worker import ask_ai
-from ics_util.generator import generate_ics
+from ics_util.links import build_links
 from keyboards.user import user_kb
-from loader import bot, db
+from loader import db
 
 logger = logging.getLogger(__name__)
 
@@ -82,33 +81,21 @@ async def create_ics_command(message: Message, state: FSMContext):
         if not event_tasks:
             return
 
-        ics_filename = generate_ics(event_tasks)
-        if not ics_filename:
-            logger.error("Не удалось создать ICS файл")
+        links = build_links(event_tasks[0])
+        if not links:
+            logger.error("Cannot build calendar links")
             await message.answer(
-                "❌ Не удалось сгенерировать ICS файл для переданных мероприятий",
+                "❌ Не удалось сформировать ссылки для календарей",
                 reply_markup=user_kb,
-                )
+            )
             return
 
-        try:
-            await send_ics_file(message.chat.id, ics_filename)
-        finally:
-            try:
-                os.unlink(ics_filename)
-            except OSError as e:
-                logger.exception("Не удалось удалить временный файл %s: %s", ics_filename, e)
+        text_links = (
+            f"[Google Calendar]({links['google']})\n"
+            f"[Yandex Calendar]({links['yandex']})\n"
+            f"[Mail.ru Calendar]({links['mailru']})"
+        )
+        await message.answer(text_links, reply_markup=user_kb, disable_web_page_preview=True)
     finally:
         await state.update_data(busy=False)
 
-
-async def send_ics_file(chat_id: int, ics_filename: str) -> None:
-    """Отправить пользователю файл ICS."""
-    if not os.path.exists(ics_filename):
-        logger.error("Файл %s не найден", ics_filename)
-        return
-
-    try:
-        await bot.send_document(chat_id, FSInputFile(ics_filename))
-    except Exception as e:
-        logger.exception("Ошибка отправки ICS: %s", e)
