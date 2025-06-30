@@ -43,7 +43,8 @@ async def ask_ai(text: str) -> dict:
 
     json_str = content[json_start:json_end + 1]
     json_str.replace("'", '"').strip().encode(encoding="utf-8", errors="ignore")
-    logger.info(f"AI response: {json_str.replace("\n", "")}")
+    clean_resp = json_str.replace("\n", "")
+    logger.info(f"AI response: {clean_resp}")
 
     try:
         return json.loads(json_str)
