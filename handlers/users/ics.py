@@ -49,7 +49,10 @@ async def create_ics_command(message: Message, state: FSMContext):
         await state.clear()
 
         try:
-            logger.info(f"Создание задачи: время={datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, юзер={message.from_user.id}|{message.from_user.full_name}, текст={text}")
+            logger.info(
+                f"Создание задачи: время={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, "
+                f"юзер={message.from_user.id}|{message.from_user.full_name}, текст={text}"
+            )
             resp = await ask_ai(text)
             db.add_request(text, message.from_user.id, json.dumps(resp, ensure_ascii=False))
         except Exception:
@@ -75,20 +78,26 @@ async def create_ics_command(message: Message, state: FSMContext):
 
         await message.answer(resp.get("response", ""), reply_markup=user_kb)
 
-        for event_task in resp["events_tasks"]:
-            ics_filename = generate_ics(event_task)
-            if not ics_filename:
-                logger.error("Failed to generate ICS file for task: %s", event_task)
-                await message.answer("❌ Не удалось сгенерировать ICS файл для одной из задач", reply_markup=user_kb)
-                continue
+        event_tasks = [t for t in resp["events_tasks"] if t.get("type") == "event"]
+        if not event_tasks:
+            return
 
+        ics_filename = generate_ics(event_tasks)
+        if not ics_filename:
+            logger.error("Failed to generate ICS file")
+            await message.answer(
+                "❌ Не удалось сгенерировать ICS файл для переданных мероприятий",
+                reply_markup=user_kb,
+            )
+            return
+
+        try:
+            await send_ics_file(message.chat.id, ics_filename)
+        finally:
             try:
-                await send_ics_file(message.chat.id, ics_filename)
-            finally:
-                try:
-                    os.unlink(ics_filename)
-                except OSError:
-                    logger.exception("Failed to remove temp file %s", ics_filename)
+                os.unlink(ics_filename)
+            except OSError:
+                logger.exception("Failed to remove temp file %s", ics_filename)
     finally:
         await state.update_data(busy=False)
 
