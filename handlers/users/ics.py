@@ -58,7 +58,11 @@ async def create_ics_command(message: Message, state: FSMContext):
             return
 
         if resp.get("error"):
-            await message.answer(f"❌ Не удалось создать список задач: {resp['error']}{f" {resp['response']}" if resp['response'] != "" else ""}", reply_markup=user_kb)
+            extra = f" {resp['response']}" if resp.get('response') else ""
+            await message.answer(
+                f"❌ Не удалось создать список задач: {resp['error']}{extra}",
+                reply_markup=user_kb,
+            )
             return
 
         if "events_tasks" not in resp:

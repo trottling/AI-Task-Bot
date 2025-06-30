@@ -19,12 +19,7 @@ dp = Dispatcher()
 # Ai
 AI_API_KEY = config.AI_API_KEY
 AI_API_URL = config.AI_API_URL
-AI_MODE = config.AI_MODE.lower()
 PROXY_URL = config.AI_PROXY_URL
-
-if AI_MODE not in ["chat_completions", "completions"]:
-    print("AI_MODE must be either 'chat_completions' or 'completions'")
-    sys.exit(1)
 
 if not AI_API_URL:
     AI_API_URL = None
