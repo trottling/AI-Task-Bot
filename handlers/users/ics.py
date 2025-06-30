@@ -104,8 +104,11 @@ async def create_ics_command(message: Message, state: FSMContext):
 
 async def send_ics_file(chat_id: int, ics_filename: str) -> None:
     """Отправить пользователю файл ICS."""
+    if not os.path.exists(ics_filename):
+        logger.error("Файл %s не найден", ics_filename)
+        return
+
     try:
-        file = FSInputFile(ics_filename)
-        await bot.send_document(chat_id, file)
+        await bot.send_document(chat_id, FSInputFile(ics_filename))
     except Exception as e:
         logger.exception("Ошибка отправки ICS: %s", e)
