@@ -16,25 +16,30 @@ def _create_event(task: dict) -> Event | None:
         return None
      
     try:
-      date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
         logger.warning("Некорректная дата: %s", date_str)
         return None
-      
-     time_str = (task.get("time") or "00:00").strip()
-    try:
-        hour, minute = map(int, time_str.split(":", 1))
-    except ValueError:
-        logger.warning("Некорректное время: %s", time_str)
-        hour = minute = 0
 
-    start_dt = date_dt.replace(hour=hour, minute=minute)
+    all_day = bool(task.get("all_day"))
+    if all_day:
+        start_dt = date_dt.date()
+        end_dt = start_dt + datetime.timedelta(days=1)
+    else:
+        time_str = (task.get("time") or "00:00").strip()
+        try:
+            hour, minute = map(int, time_str.split(":", 1))
+        except ValueError:
+            logger.warning("Некорректное время: %s", time_str)
+            hour = minute = 0
+        start_dt = date_dt.replace(hour=hour, minute=minute)
+        end_dt = start_dt + datetime.timedelta(hours=1)
 
     event = Event()
     event.add("uid", str(uuid.uuid4()))
     event.add("dtstamp", datetime.datetime.utcnow())
     event.add("dtstart", start_dt)
-    event.add("dtend", start_dt + datetime.timedelta(hours=1))
+    event.add("dtend", end_dt)
     event.add("summary", title)
     description = task.get("description")
     if description:

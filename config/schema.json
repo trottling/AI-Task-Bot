@@ -48,6 +48,9 @@
               "string",
               "null"
             ]
+          },
+          "all_day": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -57,7 +60,8 @@
           "description",
           "date",
           "time",
-          "location"
+          "location",
+          "all_day"
         ],
         "additionalProperties": false
       }
