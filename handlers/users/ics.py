@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 import json
 
 from aiogram.fsm.context import FSMContext
@@ -48,6 +49,7 @@ async def create_ics_command(message: Message, state: FSMContext):
         await state.clear()
 
         try:
+            logger.info(f"Создание задачи: время={datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, юзер={message.from_user.id}|{message.from_user.full_name}, текст={text}")
             resp = await ask_ai(text)
             db.add_request(text, message.from_user.id, json.dumps(resp, ensure_ascii=False))
         except Exception:

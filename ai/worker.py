@@ -13,24 +13,19 @@ async def ask_ai(text: str) -> dict:
     prompt = AI_USER_PROMPT.replace("{msg}", text).replace("{time}", now)
     content = ""
 
-    logger.info(f"Запрос к AI: модель={AI_API_MODEL}, время={now}, текст={text}")
-
     try:
         response = await ai_client.responses.create(
             model=AI_API_MODEL,
             input=prompt,
             instructions=AI_SYSTEM_PROMPT,
-            temperature=0.3,
             text={
                 "format": {
                     "type": "json_schema",
-                    "json_schema": {
-                        "name": "events_tasks_schema",
-                        "schema": json.loads(AI_SCHEMA),
-                    },
-                }
-            },
-        )
+                    "name": "events_tasks_schema",
+                    "schema": json.loads(AI_SCHEMA),
+                    }
+                },
+            )
 
         content = response.output_text.strip()
 
@@ -47,7 +42,8 @@ async def ask_ai(text: str) -> dict:
         return {}
 
     json_str = content[json_start:json_end + 1]
-    logger.debug(f"AI response: {json_str}")
+    json_str.replace("'", '"').strip().encode(encoding="utf-8", errors="ignore")
+    logger.info(f"AI response: {json_str.replace("\n", "")}")
 
     try:
         return json.loads(json_str)

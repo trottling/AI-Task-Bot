@@ -48,7 +48,7 @@ def generate_ics(event_task: dict) -> Optional[str]:
         import tempfile
         import os
         
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False, errors="ignore") as f:
             f.write(calendar.serialize())
             return f.name
 
