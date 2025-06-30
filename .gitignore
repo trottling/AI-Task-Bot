@@ -180,5 +180,6 @@ cython_debug/
 .idea/inspectionProfiles/Project_Default.xml
 .gitignore
 .cursorignore
-.gitignore
-.gitignore
+
+# Database
+*.db

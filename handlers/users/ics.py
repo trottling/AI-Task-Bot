@@ -5,69 +5,84 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, FSInputFile
 
-from ai_utils.worker import ask_ai
+from ai.worker import ask_ai
 from ics_util.generator import generate_ics
 from keyboards.user import user_kb
 from loader import bot
 
 logger = logging.getLogger(__name__)
 
+
 class TaskCreation(StatesGroup):
     waiting_for_text = State()
 
+
 async def start_ics_creation(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state == TaskCreation.waiting_for_text.state:
+        await message.answer("Вы уже создаёте задачи. Пожалуйста, завершите предыдущий ввод.", reply_markup=user_kb)
+        return
     await message.answer("Отправьте сообщение с задачами:")
     await state.set_state(TaskCreation.waiting_for_text)
 
+
 async def create_ics_command(message: Message, state: FSMContext):
-    text = message.text.strip()
-
-    if len(text) < 10:
-        await message.answer("Слишком маленькое сообщение", reply_markup=user_kb)
+    data = await state.get_data()
+    if data.get("busy"):
+        await message.answer("⏳ Уже идёт генерация задач. Пожалуйста, дождитесь завершения.", reply_markup=user_kb)
         return
-
-    if len(text) > 500:
-        await message.answer("Слишком большое сообщение", reply_markup=user_kb)
-        return
-
-    await message.answer("🔄 Генерация ивентов...")
-    await state.clear()
-
+    await state.update_data(busy=True)
     try:
-        resp = await ask_ai(text)
-    except Exception:
-        logger.exception("AI request failed")
-        await message.answer("❌ Не удалось создать список задач: Нет ответа", reply_markup=user_kb)
-        return
+        text = message.text.strip()
 
-    if not resp:
-        await message.answer("❌ Не удалось создать список задач: Пустой ответ", reply_markup=user_kb)
-        return
+        if len(text) < 10:
+            await message.answer("Слишком маленькое сообщение", reply_markup=user_kb)
+            return
 
-    if resp.get("error"):
-        await message.answer(f"❌ Не удалось создать список задач: {resp['error']}", reply_markup=user_kb)
-        return
+        if len(text) > 500:
+            await message.answer("Слишком большое сообщение", reply_markup=user_kb)
+            return
 
-    if "events_tasks" not in resp:
-        await message.reply("❌ Не удалось создать список задач: в JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
-        return
+        await message.answer("🔄 Генерация задач...")
+        await state.clear()
 
-    await message.answer(resp.get("response", ""), reply_markup=user_kb)
-
-    for event_task in resp["events_tasks"]:
-        ics_filename = generate_ics(event_task)
-        if not ics_filename:
-            logger.error("Failed to generate ICS file for task: %s", event_task)
-            await message.answer("❌ Не удалось сгенерировать ICS файл для одной из задач", reply_markup=user_kb)
-            continue
-            
         try:
-            await send_ics_file(message.chat.id, ics_filename)
-        finally:
+            resp = await ask_ai(text)
+        except Exception:
+            logger.exception("AI request failed")
+            await message.answer("❌ Не удалось создать список задач: Нет ответа", reply_markup=user_kb)
+            return
+
+        if not resp:
+            await message.answer("❌ Не удалось создать список задач: Пустой ответ", reply_markup=user_kb)
+            return
+
+        if resp.get("error"):
+            await message.answer(f"❌ Не удалось создать список задач: {resp['error']}{f" {resp['response']}" if resp['response'] != "" else ""}", reply_markup=user_kb)
+            return
+
+        if "events_tasks" not in resp:
+            await message.reply("❌ Не удалось создать список задач: в JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
+            return
+
+        await message.answer(resp.get("response", ""), reply_markup=user_kb)
+
+        for event_task in resp["events_tasks"]:
+            ics_filename = generate_ics(event_task)
+            if not ics_filename:
+                logger.error("Failed to generate ICS file for task: %s", event_task)
+                await message.answer("❌ Не удалось сгенерировать ICS файл для одной из задач", reply_markup=user_kb)
+                continue
+
             try:
-                os.unlink(ics_filename)
-            except OSError:
-                logger.exception("Failed to remove temp file %s", ics_filename)
+                await send_ics_file(message.chat.id, ics_filename)
+            finally:
+                try:
+                    os.unlink(ics_filename)
+                except OSError:
+                    logger.exception("Failed to remove temp file %s", ics_filename)
+    finally:
+        await state.update_data(busy=False)
 
 
 async def send_ics_file(chat_id, ics_filename):

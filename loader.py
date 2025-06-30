@@ -1,3 +1,4 @@
+import httpx
 from aiogram import Bot, Dispatcher, Router
 from openai import AsyncOpenAI
 
@@ -16,7 +17,12 @@ else:
     if not AI_API_URL.endswith("/v1"):
         AI_API_URL += "/v1"
 
-ai_client = AsyncOpenAI(api_key=AI_API_KEY, base_url=AI_API_URL)
+http_client = httpx.AsyncClient()
+
+ai_client = AsyncOpenAI(
+    api_key=AI_API_KEY,
+    base_url=AI_API_URL)
+
 router = Router()
 bot = Bot(TOKEN)
 db = Database(path_to_db="storage/main.db")
