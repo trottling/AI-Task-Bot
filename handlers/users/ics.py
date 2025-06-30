@@ -52,11 +52,11 @@ async def create_ics_command(message: Message, state: FSMContext):
             logger.info(
                 f"Создание задачи: время={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, "
                 f"юзер={message.from_user.id}|{message.from_user.full_name}, текст={text}"
-                )
+            )
             resp = await ask_ai(text)
             db.add_request(text, message.from_user.id, json.dumps(resp, ensure_ascii=False))
-        except Exception:
-            logger.exception("AI request failed")
+        except Exception as e:
+            logger.exception("Не удалось запросить AI: %s", e)
             await message.answer("❌ Не удалось создать список задач:\nНет ответа", reply_markup=user_kb)
             return
 
@@ -84,7 +84,7 @@ async def create_ics_command(message: Message, state: FSMContext):
 
         ics_filename = generate_ics(event_tasks)
         if not ics_filename:
-            logger.error("Failed to generate ICS file")
+            logger.error("Не удалось создать ICS файл")
             await message.answer(
                 "❌ Не удалось сгенерировать ICS файл для переданных мероприятий",
                 reply_markup=user_kb,
@@ -96,12 +96,16 @@ async def create_ics_command(message: Message, state: FSMContext):
         finally:
             try:
                 os.unlink(ics_filename)
-            except OSError:
-                logger.exception("Failed to remove temp file %s", ics_filename)
+            except OSError as e:
+                logger.exception("Не удалось удалить временный файл %s: %s", ics_filename, e)
     finally:
         await state.update_data(busy=False)
 
 
-async def send_ics_file(chat_id, ics_filename):
-    file = FSInputFile(ics_filename)
-    await bot.send_document(chat_id, file)
+async def send_ics_file(chat_id: int, ics_filename: str) -> None:
+    """Отправить пользователю файл ICS."""
+    try:
+        file = FSInputFile(ics_filename)
+        await bot.send_document(chat_id, file)
+    except Exception as e:
+        logger.exception("Ошибка отправки ICS: %s", e)
