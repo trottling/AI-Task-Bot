@@ -21,7 +21,7 @@ def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
     """
     try:
         calendar = Calendar()
-        calendar.creator = "-//Codex Bot//Schedule Generator//EN"
+        calendar.creator = "Task AI Bot"
         calendar.version = "2.0"
         calendar.extra.append(ContentLine(name="CALSCALE", value="GREGORIAN"))
         calendar.extra.append(ContentLine(name="METHOD", value="PUBLISH"))
