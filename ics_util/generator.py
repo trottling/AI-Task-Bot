@@ -1,78 +1,77 @@
+"""Утилиты для создания ICS-файлов."""
+
 import datetime
 import logging
 import tempfile
 import uuid
 from typing import Iterable, Optional
 
-from ics import Calendar, Event
-from ics.grammar.parse import ContentLine
+from icalendar import Calendar, Event
 
 logger = logging.getLogger(__name__)
 
 
-def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
-    """Generate an ICS file containing the provided events.
+def _create_event(task: dict) -> Event | None:
+    """Собрать объект ``Event`` из словаря."""
+    title = task.get("title")
+    date_str = task.get("date")
+    if not title or not date_str:
+        return None
 
-    Args:
-        event_tasks: Iterable of dicts describing events.
-
-    Returns:
-        Path to generated file or ``None`` if generation failed or no events
-        were created.
-    """
     try:
-        calendar = Calendar()
-        calendar.creator = "Task AI Bot"
-        calendar.version = "2.0"
-        calendar.extra.append(ContentLine(name="CALSCALE", value="GREGORIAN"))
-        calendar.extra.append(ContentLine(name="METHOD", value="PUBLISH"))
-        calendar.extra.append(ContentLine(name="X-WR-CALNAME", value="Codex events"))
-        calendar.extra.append(ContentLine(name="X-WR-TIMEZONE", value="UTC"))
+        date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        logger.warning("Некорректная дата: %s", date_str)
+        return None
 
-        for event_task in event_tasks:
-            if not event_task.get("title"):
-                continue
+    time_str = (task.get("time") or "00:00").strip()
+    try:
+        hour, minute = map(int, time_str.split(":", 1))
+    except ValueError:
+        logger.warning("Некорректное время: %s", time_str)
+        hour = minute = 0
 
-            date_str = event_task.get("date")
-            if not date_str:
-                continue
+    start_dt = date_dt.replace(hour=hour, minute=minute)
 
-            time_str = (event_task.get("time") or "00:00").strip()
+    event = Event()
+    event.add("uid", str(uuid.uuid4()))
+    event.add("dtstamp", datetime.datetime.utcnow())
+    event.add("dtstart", start_dt)
+    event.add("dtend", start_dt + datetime.timedelta(hours=1))
+    event.add("summary", title)
+    description = task.get("description")
+    if description:
+        event.add("description", description)
+    location = task.get("location")
+    if location:
+        event.add("location", location)
+    return event
 
-            try:
-                date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            except ValueError:
-                continue
 
-            try:
-                hour, minute = [int(t) for t in time_str.split(":", 1)]
-            except Exception:
-                logger.warning("Invalid time: %s", time_str)
-                hour, minute = 0, 0
+def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
+    """Создать ICS-файл и вернуть путь к нему."""
+    cal = Calendar()
+    cal.add("prodid", "-//Task AI Bot//")
+    cal.add("version", "2.0")
+    cal.add("calscale", "GREGORIAN")
+    cal.add("method", "PUBLISH")
+    cal.add("X-WR-CALNAME", "Codex events")
+    cal.add("X-WR-TIMEZONE", "UTC")
 
-            start_dt = date_dt.replace(hour=hour, minute=minute)
+    count = 0
+    for task in event_tasks:
+        event = _create_event(task)
+        if event:
+            cal.add_component(event)
+            count += 1
 
-            event = Event()
-            event.created = datetime.datetime.utcnow()
-            event.uid = str(uuid.uuid4())
-            event.name = event_task["title"]
-            event.description = event_task.get("description", "")
-            event.begin = start_dt
-            event.end = start_dt + datetime.timedelta(hours=1)
+    if not count:
+        return None
 
-            location = event_task.get("location")
-            if location:
-                event.location = location
-
-            calendar.events.add(event)
-
-        if not calendar.events:
-            return None
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False, errors="ignore") as f:
-            f.write(calendar.serialize())
+    try:
+        with tempfile.NamedTemporaryFile("wb", suffix=".ics", delete=False) as f:
+            f.write(cal.to_ical())
             return f.name
-
     except Exception as e:
-        logger.exception(f"Error generating ICS: {e}")
+        logger.exception("Ошибка генерации ICS: %s", e)
         return None
