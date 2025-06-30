@@ -52,33 +52,33 @@ async def create_ics_command(message: Message, state: FSMContext):
             logger.info(
                 f"Создание задачи: время={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, "
                 f"юзер={message.from_user.id}|{message.from_user.full_name}, текст={text}"
-            )
+                )
             resp = await ask_ai(text)
             db.add_request(text, message.from_user.id, json.dumps(resp, ensure_ascii=False))
         except Exception:
             logger.exception("AI request failed")
-            await message.answer("❌ Не удалось создать список задач: Нет ответа", reply_markup=user_kb)
+            await message.answer("❌ Не удалось создать список задач:\nНет ответа", reply_markup=user_kb)
             return
 
         if not resp:
-            await message.answer("❌ Не удалось создать список задач: Пустой ответ", reply_markup=user_kb)
+            await message.answer("❌ Не удалось создать список задач:\nПустой ответ", reply_markup=user_kb)
             return
 
         if resp.get("error"):
             extra = f" {resp['response']}" if resp.get('response') else ""
             await message.answer(
-                f"❌ Не удалось создать список задач: {resp['error']}{extra}",
+                f"❌ Не удалось создать список задач:\n{resp['error']}{extra}",
                 reply_markup=user_kb,
-            )
+                )
             return
 
         if "events_tasks" not in resp:
-            await message.reply("❌ Не удалось создать список задач: в JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
+            await message.reply("❌ Не удалось создать список задач:\nв JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
             return
 
         await message.answer(resp.get("response", ""), reply_markup=user_kb)
 
-        event_tasks = [t for t in resp["events_tasks"] if t.get("type") == "event"]
+        event_tasks = [t for t in resp["events_tasks"] if t.get("type", "").strip().lower() == "event"]
         if not event_tasks:
             return
 
@@ -88,7 +88,7 @@ async def create_ics_command(message: Message, state: FSMContext):
             await message.answer(
                 "❌ Не удалось сгенерировать ICS файл для переданных мероприятий",
                 reply_markup=user_kb,
-            )
+                )
             return
 
         try:

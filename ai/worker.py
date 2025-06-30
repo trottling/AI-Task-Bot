@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 async def ask_ai(text: str) -> dict:
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     prompt = AI_USER_PROMPT.replace("{msg}", text).replace("{time}", now)
-    content = ""
 
     try:
         response = await ai_client.responses.create(

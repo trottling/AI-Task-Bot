@@ -1,7 +1,8 @@
 import datetime
 import logging
+import tempfile
 import uuid
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
 from ics import Calendar, Event
 from ics.grammar.parse import ContentLine
@@ -36,13 +37,20 @@ def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
             if not date_str:
                 continue
 
-            time_str = event_task.get("time", "00:00")
-            datetime_str = f"{date_str}T{time_str}:00"
+            time_str = (event_task.get("time") or "00:00").strip()
 
             try:
-                start_dt = datetime.datetime.fromisoformat(datetime_str)
+                date_dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             except ValueError:
                 continue
+
+            try:
+                hour, minute = [int(t) for t in time_str.split(":", 1)]
+            except Exception:
+                logger.warning("Invalid time: %s", time_str)
+                hour, minute = 0, 0
+
+            start_dt = date_dt.replace(hour=hour, minute=minute)
 
             event = Event()
             event.created = datetime.datetime.utcnow()
@@ -61,14 +69,10 @@ def generate_ics(event_tasks: Iterable[dict]) -> Optional[str]:
         if not calendar.events:
             return None
 
-        # Save to temporary file
-        import tempfile
-        import os
-
         with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False, errors="ignore") as f:
             f.write(calendar.serialize())
             return f.name
 
-    except Exception:
-        logger.exception("Error generating ICS")
+    except Exception as e:
+        logger.exception(f"Error generating ICS: {e}")
         return None
