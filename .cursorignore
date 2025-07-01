@@ -1,0 +1,11 @@
+./.venv/
+./__pycache__/
+./.idea/
+./.env
+./.env.local
+./.env.development
+./.env.production
+./.env.test
+./.env.development.local
+./.env.production.local
+./storage/*.db
