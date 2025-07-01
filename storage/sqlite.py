@@ -13,12 +13,12 @@ class Database:
         self.path_to_db = path_to_db
         self._init_db()
 
-    def _init_db(self) -> None:
+    def _init_db(self):
         create_users = """
         CREATE TABLE IF NOT EXISTS Users (
-            telegram_id INTEGER PRIMARY KEY,
-            full_name TEXT,
             is_allowed INTEGER DEFAULT 0
+            telegram_id INTEGER PRIMARY KEY,
+            full_name TEXT
         );
         """
         create_requests = """
@@ -35,7 +35,7 @@ class Database:
             cursor.execute(create_users)
             cursor.execute(create_requests)
             connection.commit()
-
+            
     def execute(
         self,
         sql: str,
