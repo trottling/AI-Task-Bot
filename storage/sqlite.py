@@ -2,7 +2,6 @@ import logging
 import sqlite3
 from datetime import datetime
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -15,36 +14,39 @@ class Database:
 
     def _init_db(self):
         create_users = """
-        CREATE TABLE IF NOT EXISTS Users (
-            is_allowed INTEGER DEFAULT 0
-            telegram_id INTEGER PRIMARY KEY,
-            full_name TEXT
-        );
-        """
+                       CREATE TABLE IF NOT EXISTS Users
+                       (
+                           is_allowed  INTEGER DEFAULT 0,
+                           telegram_id INTEGER PRIMARY KEY,
+                           full_name   TEXT
+                       );
+                       """
         create_requests = """
-        CREATE TABLE IF NOT EXISTS REQUESTS (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            req_time TEXT,
-            req_text TEXT,
-            req_user_id INTEGER,
-            req_resp TEXT
-        );
-        """
+                          CREATE TABLE IF NOT EXISTS REQUESTS
+                          (
+                              id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                              req_time    TEXT,
+                              req_text    TEXT,
+                              req_user_id INTEGER,
+                              req_resp    TEXT
+                          );
+                          """
+
         with sqlite3.connect(self.path_to_db) as connection:
             cursor = connection.cursor()
             cursor.execute(create_users)
             cursor.execute(create_requests)
             connection.commit()
-            
+
     def execute(
-        self,
-        sql: str,
-        parameters: tuple | None = None,
-        *,
-        fetchone: bool = False,
-        fetchall: bool = False,
-        commit: bool = False,
-    ):
+            self,
+            sql: str,
+            parameters: tuple | None = None,
+            *,
+            fetchone: bool = False,
+            fetchall: bool = False,
+            commit: bool = False,
+            ):
         parameters = parameters or ()
         data = None
         with sqlite3.connect(self.path_to_db) as connection:
@@ -61,12 +63,12 @@ class Database:
 
         return data
 
-    def add_user(self, telegram_id: int, full_name: str, allowed: bool = False) -> None:
+    def add_user(self, telegram_id: int, full_name: str, is_allowed: bool = False) -> None:
         if self.user_exists(telegram_id):
             logger.info("Пользователь %s уже существует", telegram_id)
             return
         sql = "INSERT INTO Users(telegram_id, full_name, is_allowed) VALUES(?, ?, ?);"
-        self.execute(sql, (telegram_id, full_name, int(allowed)), commit=True)
+        self.execute(sql, (telegram_id, full_name, int(is_allowed)), commit=True)
 
     def user_exists(self, telegram_id: int) -> bool:
         sql = "SELECT 1 FROM Users WHERE telegram_id = ? LIMIT 1;"
@@ -100,4 +102,3 @@ class Database:
             self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
         except Exception as exc:
             logger.exception("Не удалось сохранить запрос: %s", exc)
-
