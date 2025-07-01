@@ -21,6 +21,14 @@ class Database:
                            full_name   TEXT
                        );
                        """
+        create_chats = """
+                        CREATE TABLE IF NOT EXISTS Chats
+                        (
+                            is_allowed INTEGER DEFAULT 0,
+                            chat_id    INTEGER PRIMARY KEY,
+                            title      TEXT
+                        );
+                        """
         create_requests = """
                           CREATE TABLE IF NOT EXISTS REQUESTS
                           (
@@ -35,6 +43,7 @@ class Database:
         with sqlite3.connect(self.path_to_db) as connection:
             cursor = connection.cursor()
             cursor.execute(create_users)
+            cursor.execute(create_chats)
             cursor.execute(create_requests)
             connection.commit()
 
@@ -102,3 +111,28 @@ class Database:
             self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
         except Exception as exc:
             logger.exception("Не удалось сохранить запрос: %s", exc)
+
+    # Chat management
+
+    def add_chat(self, chat_id: int, title: str, is_allowed: bool = False) -> None:
+        if self.chat_exists(chat_id):
+            logger.info("Чат %s уже существует", chat_id)
+            return
+        sql = "INSERT INTO Chats(chat_id, title, is_allowed) VALUES(?, ?, ?);"
+        self.execute(sql, (chat_id, title, int(is_allowed)), commit=True)
+
+    def chat_exists(self, chat_id: int) -> bool:
+        sql = "SELECT 1 FROM Chats WHERE chat_id = ? LIMIT 1;"
+        return self.execute(sql, (chat_id,), fetchone=True) is not None
+
+    def has_chat_access(self, chat_id: int) -> bool:
+        sql = "SELECT is_allowed FROM Chats WHERE chat_id = ? LIMIT 1;"
+        row = self.execute(sql, (chat_id,), fetchone=True)
+        return bool(row and row[0])
+
+    def set_chat_access(self, chat_id: int, allowed: bool) -> None:
+        if self.chat_exists(chat_id):
+            sql = "UPDATE Chats SET is_allowed = ? WHERE chat_id = ?;"
+            self.execute(sql, (int(allowed), chat_id), commit=True)
+        else:
+            self.add_chat(chat_id, "", allowed)

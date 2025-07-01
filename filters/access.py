@@ -12,4 +12,8 @@ class HasAccessFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         if message.from_user.id in self.admins:
             return True
-        return self.db.has_access(message.from_user.id)
+
+        if message.chat.type == "private":
+            return self.db.has_access(message.from_user.id)
+
+        return self.db.has_chat_access(message.chat.id)

@@ -15,6 +15,7 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
 
     access_filter = HasAccessFilter(admins, db)
 
+    dp.message.register(users.help.help_command, Command("help"))
     dp.message.register(users.help.help_command, F.text == "⭐ Помощь", access_filter)
     dp.message.register(users.faq.faq_command, F.text == "ℹ️ FAQ", access_filter)
 
@@ -23,6 +24,7 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
         F.text == "❇️ Создать задачи",
         access_filter,
     )
+    dp.message.register(users.ics.start_ics_creation, Command("create"), access_filter)
     router.message.register(
         users.ics.create_ics_command,
         TaskCreation.waiting_for_text,
@@ -36,6 +38,10 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
 
     dp.message.register(admin.admin.allow_access_prompt, F.text == "Дать доступ", IsAdminFilter(admins))
     router.message.register(admin.admin.allow_access, admin.admin.GrantAccess.waiting_for_id, IsAdminFilter(admins))
+    dp.message.register(admin.admin.allow_chat_prompt, F.text == "Дать доступ чату", IsAdminFilter(admins))
+    router.message.register(admin.admin.allow_chat, admin.admin.GrantAccess.waiting_for_chat_id, IsAdminFilter(admins))
     dp.message.register(admin.admin.deny_access_prompt, F.text == "Убрать доступ", IsAdminFilter(admins))
     router.message.register(admin.admin.deny_access, admin.admin.RevokeAccess.waiting_for_id, IsAdminFilter(admins))
+    dp.message.register(admin.admin.deny_chat_prompt, F.text == "Убрать доступ чату", IsAdminFilter(admins))
+    router.message.register(admin.admin.deny_chat, admin.admin.RevokeAccess.waiting_for_chat_id, IsAdminFilter(admins))
 
