@@ -14,7 +14,7 @@ router = Router()
 bot = Bot(TOKEN)
 db = Database(path_to_db="storage/main.db")
 dp = Dispatcher()
-ICSCreator = ICSCreator()
+ics_creator = ICSCreator()
 
 # Ai
 AI_API_KEY = config.AI_API_KEY
