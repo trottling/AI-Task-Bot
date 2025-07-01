@@ -11,6 +11,30 @@ class Database:
 
     def __init__(self, path_to_db: str) -> None:
         self.path_to_db = path_to_db
+        self._init_db()
+
+    def _init_db(self):
+        create_users = """
+        CREATE TABLE IF NOT EXISTS Users (
+            telegram_id INTEGER PRIMARY KEY,
+            full_name TEXT
+        );
+        """
+        create_requests = """
+        CREATE TABLE IF NOT EXISTS REQUESTS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            req_time TEXT,
+            req_text TEXT,
+            req_user_id INTEGER,
+            req_resp TEXT
+        );
+        """
+        with sqlite3.connect(self.path_to_db) as connection:
+            cursor = connection.cursor()
+            cursor.execute(create_users)
+            cursor.execute(create_requests)
+            connection.commit()
+
 
     def execute(
         self,
