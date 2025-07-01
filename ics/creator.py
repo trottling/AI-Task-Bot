@@ -1,12 +1,12 @@
-import tempfile
-import logging
 import datetime
+import logging
+import tempfile
 
 logger = logging.getLogger(__name__)
 
 
 class ICSCreator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.header = (
             "BEGIN:VCALENDAR\n"
             "VERSION:2.0\n"
@@ -15,20 +15,20 @@ class ICSCreator:
         )
         self.footer = "END:VCALENDAR"
 
-    def create_ics(self, tasks_dict):
+    def create_ics(self, tasks_dict: dict) -> str | None:
         try:
-            events = tasks_dict.get('events_tasks', [])
+            events = tasks_dict.get("events_tasks", [])
             ics_content = [self.header]
 
             for event in events:
-                uid = datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f')
-                dtstamp = datetime.datetime.now().strftime('%Y%m%dT%H%M%SZ')
-                date = event.get('date')
-                all_day = event.get('all_day', False)
-                summary = event.get('title') or ""
-                description = event.get('description') or ""
-                location = event.get('location') or ""
-                time = event.get('time')
+                uid = datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")
+                dtstamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%SZ")
+                date = event.get("date")
+                all_day = event.get("all_day", False)
+                summary = event.get("title") or ""
+                description = event.get("description") or ""
+                location = event.get("location") or ""
+                time = event.get("time")
                 dtstart = None
 
                 if all_day:
@@ -39,7 +39,7 @@ class ICSCreator:
                     dtstart = f"{date.replace('-', '')}T000000"
 
                 # Все задачи и события идут как VEVENT
-                if event.get('type') == 'task':
+                if event.get("type") == "task":
                     summary = f"📝 {summary}"
                 ics_event = (
                     "BEGIN:VEVENT\n"
@@ -64,9 +64,10 @@ class ICSCreator:
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.ics', encoding="utf-8", errors="ignore", delete=False) as f:
                 f.write("\n".join(ics_content))
                 f.flush()
-                logger.info(f"ICS file created successfully: {f.name}")
+                logger.info("ICS файл успешно создан: %s", f.name)
                 return f.name
 
-        except Exception as e:
-            logger.error(f"Error creating ICS file: {e}")
+        except Exception as exc:
+            logger.error("Ошибка создания ICS файла: %s", exc)
             return None
+

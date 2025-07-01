@@ -39,7 +39,7 @@ class Database:
 
     def add_user(self, telegram_id: int, full_name: str) -> None:
         if self.user_exists(telegram_id):
-            logger.info("User %s already exists", telegram_id)
+            logger.info("Пользователь %s уже существует", telegram_id)
             return
         sql = "INSERT INTO Users(telegram_id, full_name) VALUES(?, ?);"
         self.execute(sql, (telegram_id, full_name), commit=True)
@@ -62,5 +62,5 @@ class Database:
                 "VALUES(?, ?, ?, ?);"
             )
             self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
-        except:
-            pass
+        except Exception as exc:
+            logger.exception("Не удалось сохранить запрос: %s", exc)
