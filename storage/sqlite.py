@@ -11,6 +11,7 @@ class Database:
 
     def __init__(self, path_to_db: str) -> None:
         self.path_to_db = path_to_db
+        self._create_tables()
 
     def execute(
         self,
@@ -37,16 +38,47 @@ class Database:
 
         return data
 
-    def add_user(self, telegram_id: int, full_name: str) -> None:
+    def _create_tables(self) -> None:
+        users_sql = (
+            "CREATE TABLE IF NOT EXISTS Users("
+            "telegram_id INTEGER PRIMARY KEY, "
+            "full_name TEXT, "
+            "is_allowed INTEGER DEFAULT 0"
+            ");"
+        )
+        requests_sql = (
+            "CREATE TABLE IF NOT EXISTS REQUESTS("
+            "req_time TEXT, "
+            "req_text TEXT, "
+            "req_user_id INTEGER, "
+            "req_resp TEXT"
+            ");"
+        )
+        self.execute(users_sql, commit=True)
+        self.execute(requests_sql, commit=True)
+
+    def add_user(self, telegram_id: int, full_name: str, allowed: bool = False) -> None:
         if self.user_exists(telegram_id):
             logger.info("Пользователь %s уже существует", telegram_id)
             return
-        sql = "INSERT INTO Users(telegram_id, full_name) VALUES(?, ?);"
-        self.execute(sql, (telegram_id, full_name), commit=True)
+        sql = "INSERT INTO Users(telegram_id, full_name, is_allowed) VALUES(?, ?, ?);"
+        self.execute(sql, (telegram_id, full_name, int(allowed)), commit=True)
 
     def user_exists(self, telegram_id: int) -> bool:
         sql = "SELECT 1 FROM Users WHERE telegram_id = ? LIMIT 1;"
         return self.execute(sql, (telegram_id,), fetchone=True) is not None
+
+    def has_access(self, telegram_id: int) -> bool:
+        sql = "SELECT is_allowed FROM Users WHERE telegram_id = ? LIMIT 1;"
+        row = self.execute(sql, (telegram_id,), fetchone=True)
+        return bool(row and row[0])
+
+    def set_access(self, telegram_id: int, allowed: bool) -> None:
+        if self.user_exists(telegram_id):
+            sql = "UPDATE Users SET is_allowed = ? WHERE telegram_id = ?;"
+            self.execute(sql, (int(allowed), telegram_id), commit=True)
+        else:
+            self.add_user(telegram_id, "", allowed)
 
     def count_users(self):
         return self.execute("SELECT COUNT(*) FROM Users;", fetchone=True)
