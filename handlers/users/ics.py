@@ -22,9 +22,12 @@ class TaskCreation(StatesGroup):
 async def start_ics_creation(message: Message, state: FSMContext) -> None:
     current_state = await state.get_state()
     if current_state == TaskCreation.waiting_for_text.state:
-        await message.answer("Вы уже создаёте задачи. Пожалуйста, завершите предыдущий ввод.", reply_markup=user_kb)
+        await message.answer("⛔️ Вы уже начали составление задачи, отправьте её.", reply_markup=user_kb)
         return
-    await message.answer("Отправьте сообщение с задачами:")
+    await message.answer(
+        "Отправьте сообщение с задачами\n\n"
+        "Бот извлечет суть задачи, время и место"
+        )
     await state.set_state(TaskCreation.waiting_for_text)
 
 
@@ -37,12 +40,14 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
     try:
         text = message.text.strip()
 
-        if len(text) < 10:
-            await message.answer("Слишком маленькое сообщение", reply_markup=user_kb)
+        if len(text) < 15:
+            await message.answer("⛔️ Слишком маленькое сообщение", reply_markup=user_kb)
+            await state.clear()
             return
 
-        if len(text) > 500:
-            await message.answer("Слишком большое сообщение", reply_markup=user_kb)
+        if len(text) > 750:
+            await message.answer("⛔️ Слишком большое сообщение", reply_markup=user_kb)
+            await state.clear()
             return
 
         await message.answer("🔄 Генерация задач...")
@@ -55,13 +60,13 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
                 message.from_user.id,
                 message.from_user.full_name,
                 text.replace("\n", ""),
-            )
+                )
             resp = await ask_ai(text)
             db.add_request(
                 text,
                 message.from_user.id,
                 json.dumps(resp, ensure_ascii=False),
-            )
+                )
         except Exception as exc:
             logger.exception("Не удалось запросить AI: %s", exc)
             await message.answer("❌ Не удалось создать список задач:\nНет ответа", reply_markup=user_kb)
@@ -89,11 +94,11 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
             t
             for t in resp["events_tasks"]
             if t.get("type", "").strip().lower() in ["event", "task"]
-        ]
+            ]
         if not event_tasks:
             return
         logger.debug(event_tasks)
-        ics_filename = ics_creator.create_ics({"events_tasks": event_tasks})
+        ics_filename = ics_creator.create_ics({ "events_tasks": event_tasks })
         if not ics_filename:
             logger.error("Не удалось создать ICS файл")
             await message.answer(
@@ -123,4 +128,3 @@ async def send_ics_file(chat_id: int, ics_filename: str) -> None:
         await bot.send_document(chat_id, FSInputFile(ics_filename))
     except Exception as e:
         logger.exception("Ошибка отправки ICS: %s", e)
-

@@ -11,12 +11,12 @@ from .users.ics import TaskCreation
 
 async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
     dp.message.register(users.start.start_command, Command("start"))
-    dp.message.register(admin.is_admin, Command("admin"), IsAdminFilter(admins))
+    dp.message.register(admin.admin.is_admin, Command("admin"), IsAdminFilter(admins))
 
     access_filter = HasAccessFilter(admins, db)
 
     dp.message.register(users.help.help_command, F.text == "⭐ Помощь", access_filter)
-    dp.message.register(users.about.about_command, F.text == "ℹ️ О боте", access_filter)
+    dp.message.register(users.faq.faq_command, F.text == "ℹ️ FAQ", access_filter)
 
     router.message.register(
         users.ics.start_ics_creation,
