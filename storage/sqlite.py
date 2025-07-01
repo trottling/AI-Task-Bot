@@ -11,7 +11,30 @@ class Database:
 
     def __init__(self, path_to_db: str) -> None:
         self.path_to_db = path_to_db
-        self._create_tables()
+        self._init_db()
+
+    def _init_db(self) -> None:
+        create_users = """
+        CREATE TABLE IF NOT EXISTS Users (
+            telegram_id INTEGER PRIMARY KEY,
+            full_name TEXT,
+            is_allowed INTEGER DEFAULT 0
+        );
+        """
+        create_requests = """
+        CREATE TABLE IF NOT EXISTS REQUESTS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            req_time TEXT,
+            req_text TEXT,
+            req_user_id INTEGER,
+            req_resp TEXT
+        );
+        """
+        with sqlite3.connect(self.path_to_db) as connection:
+            cursor = connection.cursor()
+            cursor.execute(create_users)
+            cursor.execute(create_requests)
+            connection.commit()
 
     def execute(
         self,
@@ -37,25 +60,6 @@ class Database:
                 data = cursor.fetchall()
 
         return data
-
-    def _create_tables(self) -> None:
-        users_sql = (
-            "CREATE TABLE IF NOT EXISTS Users("
-            "telegram_id INTEGER PRIMARY KEY, "
-            "full_name TEXT, "
-            "is_allowed INTEGER DEFAULT 0"
-            ");"
-        )
-        requests_sql = (
-            "CREATE TABLE IF NOT EXISTS REQUESTS("
-            "req_time TEXT, "
-            "req_text TEXT, "
-            "req_user_id INTEGER, "
-            "req_resp TEXT"
-            ");"
-        )
-        self.execute(users_sql, commit=True)
-        self.execute(requests_sql, commit=True)
 
     def add_user(self, telegram_id: int, full_name: str, allowed: bool = False) -> None:
         if self.user_exists(telegram_id):
@@ -96,3 +100,4 @@ class Database:
             self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
         except Exception as exc:
             logger.exception("Не удалось сохранить запрос: %s", exc)
+
