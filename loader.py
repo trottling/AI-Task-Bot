@@ -1,10 +1,9 @@
-import sys
-
 import httpx
 from aiogram import Bot, Dispatcher, Router
 from openai import AsyncOpenAI
 
 from config import config
+from ics.creator import ICSCreator
 from storage.sqlite import Database
 
 # Bot
@@ -15,6 +14,7 @@ router = Router()
 bot = Bot(TOKEN)
 db = Database(path_to_db="storage/main.db")
 dp = Dispatcher()
+ICSCreator = ICSCreator()
 
 # Ai
 AI_API_KEY = config.AI_API_KEY

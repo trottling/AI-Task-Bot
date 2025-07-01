@@ -8,7 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, FSInputFile
 
 from ai.worker import ask_ai
-from ics_util.generator import generate_ics
+from loader import ICSCreator
 from keyboards.user import user_kb
 from loader import bot, db
 
@@ -51,8 +51,8 @@ async def create_ics_command(message: Message, state: FSMContext):
         try:
             logger.info(
                 f"Создание задачи: время={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, "
-                f"юзер={message.from_user.id}|{message.from_user.full_name}, текст={text}"
-            )
+                f"юзер={message.from_user.id}|{message.from_user.full_name}, текст={text.replace('\n', '')}"
+                )
             resp = await ask_ai(text)
             db.add_request(text, message.from_user.id, json.dumps(resp, ensure_ascii=False))
         except Exception as e:
@@ -77,12 +77,12 @@ async def create_ics_command(message: Message, state: FSMContext):
             return
 
         await message.answer(resp.get("response", ""), reply_markup=user_kb)
-
-        event_tasks = [t for t in resp["events_tasks"] if t.get("type", "").strip().lower() == "event"]
+        print(resp)
+        event_tasks = [t for t in resp["events_tasks"] if t.get("type", "").strip().lower() in ["event", "task"]]
         if not event_tasks:
             return
-
-        ics_filename = generate_ics(event_tasks)
+        print(event_tasks)
+        ics_filename = ICSCreator.create_ics({ "events_tasks": event_tasks })
         if not ics_filename:
             logger.error("Не удалось создать ICS файл")
             await message.answer(
