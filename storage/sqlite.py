@@ -16,6 +16,7 @@ class Database:
     def _init_db(self):
         create_users = """
         CREATE TABLE IF NOT EXISTS Users (
+            is_allowed INTEGER DEFAULT 0
             telegram_id INTEGER PRIMARY KEY,
             full_name TEXT
         );
@@ -34,8 +35,7 @@ class Database:
             cursor.execute(create_users)
             cursor.execute(create_requests)
             connection.commit()
-
-
+            
     def execute(
         self,
         sql: str,
@@ -61,16 +61,28 @@ class Database:
 
         return data
 
-    def add_user(self, telegram_id: int, full_name: str) -> None:
+    def add_user(self, telegram_id: int, full_name: str, allowed: bool = False) -> None:
         if self.user_exists(telegram_id):
             logger.info("Пользователь %s уже существует", telegram_id)
             return
-        sql = "INSERT INTO Users(telegram_id, full_name) VALUES(?, ?);"
-        self.execute(sql, (telegram_id, full_name), commit=True)
+        sql = "INSERT INTO Users(telegram_id, full_name, is_allowed) VALUES(?, ?, ?);"
+        self.execute(sql, (telegram_id, full_name, int(allowed)), commit=True)
 
     def user_exists(self, telegram_id: int) -> bool:
         sql = "SELECT 1 FROM Users WHERE telegram_id = ? LIMIT 1;"
         return self.execute(sql, (telegram_id,), fetchone=True) is not None
+
+    def has_access(self, telegram_id: int) -> bool:
+        sql = "SELECT is_allowed FROM Users WHERE telegram_id = ? LIMIT 1;"
+        row = self.execute(sql, (telegram_id,), fetchone=True)
+        return bool(row and row[0])
+
+    def set_access(self, telegram_id: int, allowed: bool) -> None:
+        if self.user_exists(telegram_id):
+            sql = "UPDATE Users SET is_allowed = ? WHERE telegram_id = ?;"
+            self.execute(sql, (int(allowed), telegram_id), commit=True)
+        else:
+            self.add_user(telegram_id, "", allowed)
 
     def count_users(self):
         return self.execute("SELECT COUNT(*) FROM Users;", fetchone=True)
@@ -88,3 +100,4 @@ class Database:
             self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
         except Exception as exc:
             logger.exception("Не удалось сохранить запрос: %s", exc)
+
