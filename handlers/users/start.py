@@ -1,11 +1,9 @@
 import logging
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from loader import _
-
 from keyboards.user import user_kb
 from loader import ADMINS, db
-from .settings import Setup, ask_language
+from .settings import Setup, ask_timezone
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +18,11 @@ async def start_command(message: Message, state: FSMContext) -> None:
 
         if not db.has_chat_access(chat_id):
             await message.answer(
-                _("🚫 У чата нет доступа к боту. Обратитесь к администратору.")
+                "🚫 У чата нет доступа к боту. Обратитесь к администратору."
             )
             return
 
-        await message.answer(_("✅ Бот активирован в чате"))
+        await message.answer("✅ Бот активирован в чате")
         return
 
     full_name = message.from_user.full_name
@@ -36,15 +34,17 @@ async def start_command(message: Message, state: FSMContext) -> None:
 
     if telegram_id not in ADMINS and not db.has_access(telegram_id):
         await message.answer(
-            _("🚫 У вас нет доступа к боту. Обратитесь к администратору.")
+            "🚫 У вас нет доступа к боту. Обратитесь к администратору."
         )
         return
 
     if not db.get_settings(telegram_id):
-        await ask_language(message, state)
+        await ask_timezone(message, state)
         return
 
     await message.answer(
-        text=_("👋 Привет, {full_name}, нажми Помощь чтобы понять как работает бот").format(full_name=full_name),
+        text=(
+            "👋 Привет, {full_name}, нажми Помощь чтобы понять как работает бот"
+        ).format(full_name=full_name),
         reply_markup=user_kb,
     )
