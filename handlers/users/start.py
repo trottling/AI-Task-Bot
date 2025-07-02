@@ -1,7 +1,7 @@
 import logging
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from aiogram.utils.i18n import gettext as _
+from loader import _
 
 from keyboards.user import user_kb
 from loader import ADMINS, db
