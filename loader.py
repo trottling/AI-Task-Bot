@@ -33,8 +33,8 @@ class DBI18nMiddleware(SimpleI18nMiddleware):
                 return settings["language"]
         return await super().get_locale(event, data)
 
-dp.message.middleware.register(DBI18nMiddleware(i18n))
-dp.callback_query.middleware.register(DBI18nMiddleware(i18n))
+db_i18n = DBI18nMiddleware(i18n)
+db_i18n.setup(dp)
 
 # Ai
 AI_API_KEY = config.AI_API_KEY
