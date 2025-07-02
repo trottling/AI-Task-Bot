@@ -16,8 +16,8 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
     access_filter = HasAccessFilter(admins, db)
 
     dp.message.register(users.help.help_command, Command("help"))
-    dp.message.register(users.help.help_command, F.text == "⭐ Помощь", access_filter)
-    dp.message.register(users.faq.faq_command, F.text == "ℹ️ FAQ", access_filter)
+    dp.message.register(users.help.help_command, F.text == "❓ Помощь", access_filter)
+    dp.message.register(users.settings.settings_command, F.text == "⚙️ Настройки", access_filter)
 
     router.message.register(
         users.ics.start_ics_creation,
