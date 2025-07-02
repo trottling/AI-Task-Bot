@@ -15,10 +15,16 @@ class ICSCreator:
         )
         self.footer = "END:VCALENDAR"
 
-    def create_ics(self, tasks_dict: dict) -> str | None:
+    def create_ics(
+        self,
+        tasks_dict: dict,
+        timezone: str = "UTC",
+        colors: dict | None = None,
+    ) -> str | None:
         try:
             events = tasks_dict.get("events_tasks", [])
             ics_content = [self.header]
+            colors = colors or {}
 
             for event in events:
                 uid = datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")
@@ -28,6 +34,7 @@ class ICSCreator:
                 summary = event.get("title") or ""
                 description = event.get("description") or ""
                 location = event.get("location") or ""
+                importance = int(event.get("importance", 0))
                 time = event.get("time")
                 dtstart = None
 
@@ -52,10 +59,15 @@ class ICSCreator:
                 if all_day:
                     ics_event += f"DTSTART;VALUE=DATE:{dtstart}\n"
                 else:
-                    ics_event += f"DTSTART:{dtstart}\n"
+                    ics_event += f"DTSTART;TZID={timezone}:{dtstart}\n"
 
                 if location:
                     ics_event += f"LOCATION:{location}\n"
+                color = colors.get(importance)
+                if not color and importance == 0:
+                    color = "#808080"
+                if color:
+                    ics_event += f"COLOR:{color}\n"
                 ics_event += "END:VEVENT"
                 ics_content.append(ics_event)
 
