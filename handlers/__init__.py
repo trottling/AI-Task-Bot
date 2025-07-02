@@ -24,11 +24,6 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
         access_filter,
     )
     router.message.register(
-        users.settings.set_language,
-        users.settings.Setup.waiting_for_language,
-        access_filter,
-    )
-    router.message.register(
         users.settings.set_timezone,
         users.settings.Setup.waiting_for_timezone,
         access_filter,
