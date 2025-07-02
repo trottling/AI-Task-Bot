@@ -35,6 +35,7 @@ class DBI18nMiddleware(SimpleI18nMiddleware):
 
 db_i18n = DBI18nMiddleware(i18n)
 db_i18n.setup(dp)
+db_i18n.setup(router)
 
 # Ai
 AI_API_KEY = config.AI_API_KEY
