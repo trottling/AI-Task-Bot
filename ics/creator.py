@@ -1,34 +1,33 @@
 import datetime
 import logging
 import tempfile
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class ICSCreator:
     def __init__(self) -> None:
-        self.header = (
+        self.header: str = (
             "BEGIN:VCALENDAR\n"
             "VERSION:2.0\n"
             "PRODID:-//ICSCreator//EN\n"
             "CALSCALE:GREGORIAN"
         )
-        self.footer = "END:VCALENDAR"
+        self.footer: str = "END:VCALENDAR"
 
-    def create_ics(
-        self,
-        tasks_dict: dict,
-        timezone: str = "UTC",
-        colors: dict | None = None,
-    ) -> str | None:
+    def create_ics(self, tasks: dict[str, Any], ) -> Optional[str]:
+        """
+        Генерирует ICS-файл из списка задач/событий.
+        Возвращает путь к временному файлу или None при ошибке.
+        """
         try:
-            events = tasks_dict.get("events_tasks", [])
-            ics_content = [self.header]
-            colors = colors or {}
+            events = tasks.get("events_tasks", [])
+            ics_content: list[str] = [self.header]
 
             for event in events:
                 uid = datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")
-                dtstamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%SZ")
+                date_stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%SZ")
                 date = event.get("date")
                 all_day = event.get("all_day", False)
                 summary = event.get("title") or ""
@@ -36,38 +35,52 @@ class ICSCreator:
                 location = event.get("location") or ""
                 importance = int(event.get("importance", 0))
                 time = event.get("time")
-                dtstart = None
+                date_start = None
 
                 if all_day:
-                    dtstart = f"{date.replace('-', '')}"
+                    date_start = f"{date.replace('-', '')}"
                 elif date and time:
-                    dtstart = f"{date.replace('-', '')}T{time.replace(':', '')}00"
+                    date_start = f"{date.replace('-', '')}T{time.replace(':', '')}00"
                 elif date:
-                    dtstart = f"{date.replace('-', '')}T000000"
+                    date_start = f"{date.replace('-', '')}T000000"
 
                 # Все задачи и события идут как VEVENT
                 if event.get("type") == "task":
                     summary = f"📝 {summary}"
+
                 ics_event = (
                     "BEGIN:VEVENT\n"
                     f"UID:{uid}\n"
-                    f"DTSTAMP:{dtstamp}\n"
+                    f"DTSTAMP:{date_stamp}\n"
                     f"SUMMARY:{summary}\n"
                     f"DESCRIPTION:{description}\n"
                 )
 
                 if all_day:
-                    ics_event += f"DTSTART;VALUE=DATE:{dtstart}\n"
+                    ics_event += f"DTSTART;VALUE=DATE:{date_start}\n"
                 else:
-                    ics_event += f"DTSTART;TZID={timezone}:{dtstart}\n"
+                    ics_event += f"DTSTART;TZID=UTC:{date_start}\n"
 
                 if location:
                     ics_event += f"LOCATION:{location}\n"
-                color = colors.get(importance)
-                if color is None and importance == 0:
-                    color = colors.get(0, "#808080")
-                if color:
+
+                match importance:
+                    case 1:
+                        color = "#E84E4E"
+                    case 2:
+                        color = "#2A96F9"
+                    case 3:
+                        color = "#DDAD33"
+                    case 4:
+                        color = "#73C160"
+                    case 0:
+                        color = ""
+                    case _:
+                        color = ""
+
+                if color != "":
                     ics_event += f"COLOR:{color}\n"
+
                 ics_event += "END:VEVENT"
                 ics_content.append(ics_event)
 
@@ -76,10 +89,9 @@ class ICSCreator:
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.ics', encoding="utf-8", errors="ignore", delete=False) as f:
                 f.write("\n".join(ics_content))
                 f.flush()
-                logger.info("ICS файл успешно создан: %s", f.name)
+                logger.info(f"ICS файл успешно создан: {f.name}")
                 return f.name
 
-        except Exception as exc:
-            logger.error("Ошибка создания ICS файла: %s", exc)
+        except Exception as e:
+            logger.error(f"Ошибка создания ICS файла: {e}", )
             return None
-

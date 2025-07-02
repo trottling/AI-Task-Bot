@@ -1,18 +1,21 @@
 import logging
 import os
-from datetime import datetime
-import json
 
+from aiogram import Router
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message, FSInputFile
+from aiogram.types import FSInputFile, Message
 
-from ai.worker import ask_ai
-from loader import ics_creator
 from keyboards.user import user_kb
-from loader import bot, db
+from loader import bot, db, ics_creator
+from services.task_service import TaskService
 
 logger = logging.getLogger(__name__)
+
+task_service = TaskService(db=db, ics_creator=ics_creator)
+
+router = Router()
 
 
 class TaskCreation(StatesGroup):
@@ -24,10 +27,8 @@ async def start_ics_creation(message: Message, state: FSMContext) -> None:
     if current_state == TaskCreation.waiting_for_text.state:
         await message.answer("⛔️ Вы уже начали составление задачи, отправьте её.", reply_markup=user_kb)
         return
-    await message.answer(
-        "Отправьте сообщение с задачами\n\n"
-        "Бот извлечет суть задачи, время и место"
-        )
+
+    await message.answer("✍️ Отправьте сообщение с задачами\n\nℹ️ Бот понимает суть, время, место и квадрат Эйзенхауэра")
     await state.set_state(TaskCreation.waiting_for_text)
 
 
@@ -36,84 +37,27 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
     if data.get("busy"):
         await message.answer("⏳ Уже идёт генерация задач. Пожалуйста, дождитесь завершения.", reply_markup=user_kb)
         return
+
     await state.update_data(busy=True)
     try:
-        text = message.text.strip()
-
-        if len(text) < 15:
-            await message.answer("⛔️ Слишком маленькое сообщение", reply_markup=user_kb)
-            await state.clear()
-            return
-
-        if len(text) > 750:
-            await message.answer("⛔️ Слишком большое сообщение", reply_markup=user_kb)
-            await state.clear()
-            return
-
         await message.answer("🔄 Генерация задач...")
         await state.clear()
 
-        try:
-            logger.info(
-                "Создание задачи: время=%s, юзер=%s|%s, текст=%s",
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                message.from_user.id,
-                message.from_user.full_name,
-                text.replace("\n", ""),
-                )
-            resp = await ask_ai(text)
-            db.add_request(
-                text,
-                message.from_user.id,
-                json.dumps(resp, ensure_ascii=False),
-                )
-        except Exception as exc:
-            logger.exception("Не удалось запросить AI: %s", exc)
-            await message.answer("❌ Не удалось создать список задач:\nНет ответа", reply_markup=user_kb)
+        result = await task_service.process_task_text(text=message.text.strip(), user_id=message.from_user.id)
+        if not result.get("success"):
+            await message.answer(result["message"], reply_markup=user_kb)
             return
 
-        if not resp:
-            await message.answer("❌ Не удалось создать список задач:\nПустой ответ", reply_markup=user_kb)
-            return
+        await message.answer(result["message"], reply_markup=user_kb)
 
-        if resp.get("error"):
-            extra = f" {resp['response']}" if resp.get('response') else ""
-            await message.answer(
-                f"❌ Не удалось создать список задач:\n{resp['error']}{extra}",
-                reply_markup=user_kb,
-                )
-            return
-
-        if "events_tasks" not in resp:
-            await message.reply("❌ Не удалось создать список задач:\nв JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
-            return
-
-        await message.answer(resp.get("response", ""), reply_markup=user_kb)
-        logger.debug(resp)
-        event_tasks = [
-            t
-            for t in resp["events_tasks"]
-            if t.get("type", "").strip().lower() in ["event", "task"]
-            ]
+        event_tasks = result.get("event_tasks")
         if not event_tasks:
             return
-        logger.debug(event_tasks)
-        settings = db.get_settings(message.from_user.id) or {}
-        colors = {
-            1: settings.get("color_q1"),
-            2: settings.get("color_q2"),
-            3: settings.get("color_q3"),
-            4: settings.get("color_q4"),
-            0: settings.get("color_default"),
-        }
-        tz = settings.get("timezone", "UTC")
-        ics_filename = ics_creator.create_ics({"events_tasks": event_tasks}, tz, colors)
+
+        ics_filename = task_service.generate_ics(event_tasks, message.from_user.id)
         if not ics_filename:
             logger.error("Не удалось создать ICS файл")
-            await message.answer(
-                "❌ Не удалось сгенерировать ICS файл для переданных мероприятий",
-                reply_markup=user_kb,
-                )
+            await message.answer("❌ Не удалось сгенерировать ICS файл для переданных мероприятий", reply_markup=user_kb)
             return
 
         try:
@@ -122,7 +66,8 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
             try:
                 os.unlink(ics_filename)
             except OSError as e:
-                logger.exception("Не удалось удалить временный файл %s: %s", ics_filename, e)
+                logger.exception(f"Не удалось удалить временный файл {ics_filename}: {e}")
+
     finally:
         await state.update_data(busy=False)
 
@@ -130,10 +75,52 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
 async def send_ics_file(chat_id: int, ics_filename: str) -> None:
     """Отправить пользователю файл ICS."""
     if not os.path.exists(ics_filename):
-        logger.error("Файл %s не найден", ics_filename)
+        logger.error(f"Файл {ics_filename} не найден")
         return
 
     try:
         await bot.send_document(chat_id, FSInputFile(ics_filename))
     except Exception as e:
-        logger.exception("Ошибка отправки ICS: %s", e)
+        logger.exception(f"Ошибка отправки ICS: {e}")
+
+
+@router.message(Command("create"))
+async def create_from_reply(message: Message):
+    if message.chat.type == "private":
+        await message.answer("ℹ️ Используйте /create в групповых чатах в ответ на сообщение")
+        return
+
+    if not message.reply_to_message or not message.reply_to_message.text:
+        await message.answer("ℹ️ Используйте /create в ответ на сообщение с задачей.")
+        return
+
+    if message.from_user.username == bot.username:
+        await message.answer("❌ Нельзя создать задачу на сообщение бота")
+        return
+
+    await message.answer("🔄 Генерация задач...")
+
+    result = await task_service.process_task_text(text=message.reply_to_message.text.strip(), user_id=message.from_user.id)
+    if not result.get("success"):
+        await message.answer(result["message"])
+        return
+
+    await message.answer(result["message"])
+
+    event_tasks = result.get("event_tasks")
+    if not event_tasks:
+        return
+
+    ics_filename = task_service.generate_ics(event_tasks, message.from_user.id)
+    if not ics_filename:
+        logger.error("Не удалось создать ICS файл")
+        await message.answer("❌ Не удалось сгенерировать ICS файл для переданных мероприятий")
+        return
+
+    try:
+        await send_ics_file(message.chat.id, ics_filename)
+    finally:
+        try:
+            os.unlink(ics_filename)
+        except OSError as e:
+            logger.exception(f"Не удалось удалить временный файл {ics_filename}: {e}")

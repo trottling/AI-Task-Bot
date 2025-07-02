@@ -1,5 +1,5 @@
 from aiogram.filters import BaseFilter
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 
 from storage.sqlite import Database
 
@@ -9,11 +9,29 @@ class HasAccessFilter(BaseFilter):
         self.admins = admins
         self.db = db
 
-    async def __call__(self, message: Message) -> bool:
-        if message.from_user.id in self.admins:
-            return True
+    async def __call__(self, event) -> bool:
+        # Для обычных сообщений
+        if isinstance(event, Message):
 
-        if message.chat.type == "private":
-            return self.db.has_access(message.from_user.id)
+            if event.from_user.id in self.admins:
+                return True
 
-        return self.db.has_chat_access(message.chat.id)
+            if event.chat.type == "private":
+                return self.db.has_access(event.from_user.id)
+
+            return self.db.has_chat_access(event.chat.id)
+
+        # Для callback запросов
+        elif isinstance(event, CallbackQuery):
+            user_id = event.from_user.id
+            chat = event.message.chat
+
+            if user_id in self.admins:
+                return True
+
+            if chat.type == "private":
+                return self.db.has_access(user_id)
+
+            return self.db.has_chat_access(chat.id)
+
+        return False

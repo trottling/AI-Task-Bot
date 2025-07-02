@@ -2,7 +2,9 @@ import httpx
 from aiogram import Bot, Dispatcher, Router
 from openai import AsyncOpenAI
 
+from ai.service import OpenAIService
 from config import config
+from config.config import AI_API_MODEL, AI_SCHEMA, AI_SYSTEM_PROMPT, AI_USER_PROMPT
 from ics.creator import ICSCreator
 from storage.sqlite import Database
 
@@ -15,8 +17,6 @@ bot = Bot(TOKEN)
 db = Database(path_to_db="storage/main.db")
 dp = Dispatcher()
 ics_creator = ICSCreator()
-
-
 
 # Ai
 AI_API_KEY = config.AI_API_KEY
@@ -41,3 +41,12 @@ else:
     ai_client = AsyncOpenAI(
         api_key=AI_API_KEY,
         base_url=AI_API_URL)
+
+# Инициализация сервиса OpenAI
+openai_service = OpenAIService(
+    api_client=ai_client,
+    model=AI_API_MODEL,
+    schema=AI_SCHEMA,
+    system_prompt=AI_SYSTEM_PROMPT,
+    user_prompt=AI_USER_PROMPT,
+    )

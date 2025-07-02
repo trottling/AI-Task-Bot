@@ -1,18 +1,18 @@
 import logging
 import sqlite3
 from datetime import datetime
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class Database:
-    """Lightweight SQLite helper."""
-
     def __init__(self, path_to_db: str) -> None:
-        self.path_to_db = path_to_db
+        self.path_to_db: str = path_to_db
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
+        # Создание всех необходимых таблиц
         create_users = """
                        CREATE TABLE IF NOT EXISTS Users
                        (
@@ -22,13 +22,13 @@ class Database:
                        );
                        """
         create_chats = """
-                        CREATE TABLE IF NOT EXISTS Chats
-                        (
-                            is_allowed INTEGER DEFAULT 0,
-                            chat_id    INTEGER PRIMARY KEY,
-                            title      TEXT
-                        );
-                        """
+                       CREATE TABLE IF NOT EXISTS Chats
+                       (
+                           is_allowed INTEGER DEFAULT 0,
+                           chat_id    INTEGER PRIMARY KEY,
+                           title      TEXT
+                       ); \
+                       """
         create_requests = """
                           CREATE TABLE IF NOT EXISTS REQUESTS
                           (
@@ -39,36 +39,26 @@ class Database:
                               req_resp    TEXT
                           );
                           """
-        create_settings = """
-                          CREATE TABLE IF NOT EXISTS UserSettings
-                          (
-                              telegram_id  INTEGER PRIMARY KEY,
-                              timezone     TEXT DEFAULT 'UTC',
-                              color_q1     TEXT DEFAULT '#ff8c00',
-                              color_q2     TEXT DEFAULT '#ff0000',
-                              color_q3     TEXT DEFAULT '#00ff00',
-                              color_q4     TEXT DEFAULT '#0000ff',
-                              color_default TEXT DEFAULT '#808080'
-                          );
-                          """
 
         with sqlite3.connect(self.path_to_db) as connection:
             cursor = connection.cursor()
             cursor.execute(create_users)
             cursor.execute(create_chats)
             cursor.execute(create_requests)
-            cursor.execute(create_settings)
             connection.commit()
 
     def execute(
             self,
             sql: str,
-            parameters: tuple | None = None,
+            parameters: Optional[tuple[Any, ...]] = None,
             *,
             fetchone: bool = False,
             fetchall: bool = False,
             commit: bool = False,
-            ):
+            ) -> Any:
+        """
+        Универсальный метод для выполнения SQL-запросов.
+        """
         parameters = parameters or ()
         data = None
         with sqlite3.connect(self.path_to_db) as connection:
@@ -87,7 +77,7 @@ class Database:
 
     def add_user(self, telegram_id: int, full_name: str, is_allowed: bool = False) -> None:
         if self.user_exists(telegram_id):
-            logger.info("Пользователь %s уже существует", telegram_id)
+            logger.info(f"Пользователь {telegram_id} уже существует", )
             return
         sql = "INSERT INTO Users(telegram_id, full_name, is_allowed) VALUES(?, ?, ?);"
         self.execute(sql, (telegram_id, full_name, int(is_allowed)), commit=True)
@@ -108,10 +98,10 @@ class Database:
         else:
             self.add_user(telegram_id, "", allowed)
 
-    def count_users(self):
+    def count_users(self) -> Optional[tuple]:
         return self.execute("SELECT COUNT(*) FROM Users;", fetchone=True)
 
-    def count_reqs(self):
+    def count_reqs(self) -> Optional[tuple]:
         return self.execute("SELECT COUNT(*) FROM REQUESTS;", fetchone=True)
 
     def add_request(self, req_text: str, req_user_id: int, req_resp: str) -> None:
@@ -122,60 +112,14 @@ class Database:
                 "VALUES(?, ?, ?, ?);"
             )
             self.execute(sql, (now, req_text, req_user_id, req_resp), commit=True)
-        except Exception as exc:
-            logger.exception("Не удалось сохранить запрос: %s", exc)
-
-    # Settings management
-
-    def get_settings(self, telegram_id: int) -> dict | None:
-        sql = (
-            "SELECT timezone, color_q1, color_q2, color_q3, color_q4,"
-            " color_default FROM UserSettings WHERE telegram_id = ? LIMIT 1;"
-        )
-        row = self.execute(sql, (telegram_id,), fetchone=True)
-        if row:
-            return {
-                "timezone": row[0],
-                "color_q1": row[1],
-                "color_q2": row[2],
-                "color_q3": row[3],
-                "color_q4": row[4],
-                "color_default": row[5],
-            }
-        return None
-
-    def set_settings(
-        self,
-        telegram_id: int,
-        *,
-        timezone: str | None = None,
-        colors: tuple[str, str, str, str, str] | None = None,
-    ) -> None:
-        current = self.get_settings(telegram_id) or {}
-        timezone = timezone or current.get("timezone", "UTC")
-        c1, c2, c3, c4, c0 = colors or (
-            current.get("color_q1", "#ff8c00"),
-            current.get("color_q2", "#ff0000"),
-            current.get("color_q3", "#00ff00"),
-            current.get("color_q4", "#0000ff"),
-            current.get("color_default", "#808080"),
-        )
-        sql = (
-            "INSERT OR REPLACE INTO UserSettings(telegram_id, timezone,"
-            " color_q1, color_q2, color_q3, color_q4, color_default) "
-            "VALUES(?, ?, ?, ?, ?, ?, ?);"
-        )
-        self.execute(
-            sql,
-            (telegram_id, timezone, c1, c2, c3, c4, c0),
-            commit=True,
-        )
+        except Exception as e:
+            logger.exception(f"Не удалось сохранить запрос: {e}")
 
     # Chat management
 
     def add_chat(self, chat_id: int, title: str, is_allowed: bool = False) -> None:
         if self.chat_exists(chat_id):
-            logger.info("Чат %s уже существует", chat_id)
+            logger.info(f"Чат {chat_id} уже существует в БД")
             return
         sql = "INSERT INTO Chats(chat_id, title, is_allowed) VALUES(?, ?, ?);"
         self.execute(sql, (chat_id, title, int(is_allowed)), commit=True)

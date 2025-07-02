@@ -67,6 +67,41 @@ docker-compose up -d
   ```
 - Если появятся тесты, запускайте `pytest`.
 
+## Тестирование
+
+Для запуска тестов используйте:
+
+```bash
+pytest
+```
+
+Пример простого теста (см. `tests/test_ics.py`):
+
+```python
+from ics.creator import ICSCreator
+
+def test_create_ics_basic():
+    creator = ICSCreator()
+    tasks = {
+        "events_tasks": [
+            {"type": "event", "title": "Test", "date": "2025-07-01", "time": "12:00"}
+        ]
+    }
+    filename = creator.create_ics(tasks)
+    assert filename and filename.endswith('.ics')
+```
+
+## Пример .env
+
+```env
+BOT_TOKEN=your-telegram-bot-token
+ADMINS=123456789,987654321
+AI_API_KEY=your-openai-key
+AI_API_MODEL=gpt-3.5-turbo
+AI_API_URL=https://api.openai.com/v1
+AI_PROXY_URL=
+```
+
 ## Структура проекта
 
 - `ai/` — работа с моделью AI;
