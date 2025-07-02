@@ -3,8 +3,6 @@ import os
 from datetime import datetime
 import json
 
-from loader import _
-
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, FSInputFile
@@ -24,11 +22,11 @@ class TaskCreation(StatesGroup):
 async def start_ics_creation(message: Message, state: FSMContext) -> None:
     current_state = await state.get_state()
     if current_state == TaskCreation.waiting_for_text.state:
-        await message.answer(_("⛔️ Вы уже начали составление задачи, отправьте её."), reply_markup=user_kb)
+        await message.answer("⛔️ Вы уже начали составление задачи, отправьте её.", reply_markup=user_kb)
         return
     await message.answer(
-        _("Отправьте сообщение с задачами\n\n"
-          "Бот извлечет суть задачи, время и место")
+        "Отправьте сообщение с задачами\n\n"
+        "Бот извлечет суть задачи, время и место"
         )
     await state.set_state(TaskCreation.waiting_for_text)
 
@@ -36,23 +34,23 @@ async def start_ics_creation(message: Message, state: FSMContext) -> None:
 async def create_ics_command(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     if data.get("busy"):
-        await message.answer(_("⏳ Уже идёт генерация задач. Пожалуйста, дождитесь завершения."), reply_markup=user_kb)
+        await message.answer("⏳ Уже идёт генерация задач. Пожалуйста, дождитесь завершения.", reply_markup=user_kb)
         return
     await state.update_data(busy=True)
     try:
         text = message.text.strip()
 
         if len(text) < 15:
-            await message.answer(_("⛔️ Слишком маленькое сообщение"), reply_markup=user_kb)
+            await message.answer("⛔️ Слишком маленькое сообщение", reply_markup=user_kb)
             await state.clear()
             return
 
         if len(text) > 750:
-            await message.answer(_("⛔️ Слишком большое сообщение"), reply_markup=user_kb)
+            await message.answer("⛔️ Слишком большое сообщение", reply_markup=user_kb)
             await state.clear()
             return
 
-        await message.answer(_("🔄 Генерация задач..."))
+        await message.answer("🔄 Генерация задач...")
         await state.clear()
 
         try:
@@ -71,23 +69,23 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
                 )
         except Exception as exc:
             logger.exception("Не удалось запросить AI: %s", exc)
-            await message.answer(_("❌ Не удалось создать список задач:\nНет ответа"), reply_markup=user_kb)
+            await message.answer("❌ Не удалось создать список задач:\nНет ответа", reply_markup=user_kb)
             return
 
         if not resp:
-            await message.answer(_("❌ Не удалось создать список задач:\nПустой ответ"), reply_markup=user_kb)
+            await message.answer("❌ Не удалось создать список задач:\nПустой ответ", reply_markup=user_kb)
             return
 
         if resp.get("error"):
             extra = f" {resp['response']}" if resp.get('response') else ""
             await message.answer(
-                _(f"❌ Не удалось создать список задач:\n{resp['error']}{extra}"),
+                f"❌ Не удалось создать список задач:\n{resp['error']}{extra}",
                 reply_markup=user_kb,
                 )
             return
 
         if "events_tasks" not in resp:
-            await message.reply(_("❌ Не удалось создать список задач:\nв JSON отсутствует поле 'events_tasks'"), reply_markup=user_kb)
+            await message.reply("❌ Не удалось создать список задач:\nв JSON отсутствует поле 'events_tasks'", reply_markup=user_kb)
             return
 
         await message.answer(resp.get("response", ""), reply_markup=user_kb)
@@ -113,7 +111,7 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
         if not ics_filename:
             logger.error("Не удалось создать ICS файл")
             await message.answer(
-                _("❌ Не удалось сгенерировать ICS файл для переданных мероприятий"),
+                "❌ Не удалось сгенерировать ICS файл для переданных мероприятий",
                 reply_markup=user_kb,
                 )
             return
