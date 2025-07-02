@@ -43,7 +43,6 @@ class Database:
                           CREATE TABLE IF NOT EXISTS UserSettings
                           (
                               telegram_id INTEGER PRIMARY KEY,
-                              language    TEXT DEFAULT 'ru',
                               timezone    TEXT DEFAULT 'UTC',
                               color_q1    TEXT DEFAULT '#ff8c00',
                               color_q2    TEXT DEFAULT '#ff0000',
@@ -129,18 +128,17 @@ class Database:
 
     def get_settings(self, telegram_id: int) -> dict | None:
         sql = (
-            "SELECT language, timezone, color_q1, color_q2, color_q3, color_q4 "
+            "SELECT timezone, color_q1, color_q2, color_q3, color_q4 "
             "FROM UserSettings WHERE telegram_id = ? LIMIT 1;"
         )
         row = self.execute(sql, (telegram_id,), fetchone=True)
         if row:
             return {
-                "language": row[0],
-                "timezone": row[1],
-                "color_q1": row[2],
-                "color_q2": row[3],
-                "color_q3": row[4],
-                "color_q4": row[5],
+                "timezone": row[0],
+                "color_q1": row[1],
+                "color_q2": row[2],
+                "color_q3": row[3],
+                "color_q4": row[4],
             }
         return None
 
@@ -148,12 +146,10 @@ class Database:
         self,
         telegram_id: int,
         *,
-        language: str | None = None,
         timezone: str | None = None,
         colors: tuple[str, str, str, str] | None = None,
     ) -> None:
         current = self.get_settings(telegram_id) or {}
-        language = language or current.get("language", "ru")
         timezone = timezone or current.get("timezone", "UTC")
         c1, c2, c3, c4 = colors or (
             current.get("color_q1", "#ff8c00"),
@@ -162,12 +158,12 @@ class Database:
             current.get("color_q4", "#0000ff"),
         )
         sql = (
-            "INSERT OR REPLACE INTO UserSettings(telegram_id, language, timezone,"
-            " color_q1, color_q2, color_q3, color_q4) VALUES(?, ?, ?, ?, ?, ?, ?);"
+            "INSERT OR REPLACE INTO UserSettings(telegram_id, timezone,"
+            " color_q1, color_q2, color_q3, color_q4) VALUES(?, ?, ?, ?, ?, ?);"
         )
         self.execute(
             sql,
-            (telegram_id, language, timezone, c1, c2, c3, c4),
+            (telegram_id, timezone, c1, c2, c3, c4),
             commit=True,
         )
 

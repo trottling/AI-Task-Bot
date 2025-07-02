@@ -1,8 +1,6 @@
 import httpx
 from aiogram import Bot, Dispatcher, Router
-from aiogram.utils.i18n import SimpleI18nMiddleware
 
-from utils.txt_i18n import TxtI18n
 from openai import AsyncOpenAI
 
 from config import config
@@ -18,24 +16,6 @@ bot = Bot(TOKEN)
 db = Database(path_to_db="storage/main.db")
 dp = Dispatcher()
 ics_creator = ICSCreator()
-
-# I18n
-i18n = TxtI18n(path="locales", default_locale="ru", domain="bot")
-_ = i18n.gettext
-
-
-class DBI18nMiddleware(SimpleI18nMiddleware):
-    async def get_locale(self, event, data):
-        user = data.get("event_from_user")
-        if user:
-            settings = db.get_settings(user.id)
-            if settings and settings.get("language"):
-                return settings["language"]
-        return await super().get_locale(event, data)
-
-db_i18n = DBI18nMiddleware(i18n)
-db_i18n.setup(dp)
-db_i18n.setup(router)
 
 # Ai
 AI_API_KEY = config.AI_API_KEY
