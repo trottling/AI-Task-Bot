@@ -1,5 +1,5 @@
 from aiogram.types import Message
-from aiogram.utils.i18n import gettext as _
+from loader import _
 
 
 async def help_command(message: Message) -> None:

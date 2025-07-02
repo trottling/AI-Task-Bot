@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import json
 
-from aiogram.utils.i18n import gettext as _
+from loader import _
 
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup

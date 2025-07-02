@@ -2,7 +2,7 @@ import logging
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.i18n import gettext as _
+from loader import _
 
 from loader import db
 
