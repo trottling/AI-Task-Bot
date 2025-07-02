@@ -18,6 +18,31 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
     dp.message.register(users.help.help_command, Command("help"))
     dp.message.register(users.help.help_command, F.text == "❓ Помощь", access_filter)
     dp.message.register(users.settings.settings_command, F.text == "⚙️ Настройки", access_filter)
+    router.message.register(
+        users.settings.choose_option,
+        users.settings.Setup.choosing_option,
+        access_filter,
+    )
+    router.message.register(
+        users.settings.set_language,
+        users.settings.Setup.waiting_for_language,
+        access_filter,
+    )
+    router.message.register(
+        users.settings.set_timezone,
+        users.settings.Setup.waiting_for_timezone,
+        access_filter,
+    )
+    router.message.register(
+        users.settings.choose_quadrant,
+        users.settings.Setup.waiting_for_quadrant,
+        access_filter,
+    )
+    router.message.register(
+        users.settings.set_color,
+        users.settings.Setup.waiting_for_color,
+        access_filter,
+    )
 
     router.message.register(
         users.ics.start_ics_creation,

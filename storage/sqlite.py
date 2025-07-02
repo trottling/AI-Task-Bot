@@ -42,13 +42,14 @@ class Database:
         create_settings = """
                           CREATE TABLE IF NOT EXISTS UserSettings
                           (
-                              telegram_id INTEGER PRIMARY KEY,
-                              language    TEXT DEFAULT 'ru',
-                              timezone    TEXT DEFAULT 'UTC',
-                              color_q1    TEXT DEFAULT '#ff8c00',
-                              color_q2    TEXT DEFAULT '#ff0000',
-                              color_q3    TEXT DEFAULT '#00ff00',
-                              color_q4    TEXT DEFAULT '#0000ff'
+                              telegram_id  INTEGER PRIMARY KEY,
+                              language     TEXT DEFAULT 'ru',
+                              timezone     TEXT DEFAULT 'UTC',
+                              color_q1     TEXT DEFAULT '#ff8c00',
+                              color_q2     TEXT DEFAULT '#ff0000',
+                              color_q3     TEXT DEFAULT '#00ff00',
+                              color_q4     TEXT DEFAULT '#0000ff',
+                              color_default TEXT DEFAULT '#808080'
                           );
                           """
 
@@ -129,8 +130,8 @@ class Database:
 
     def get_settings(self, telegram_id: int) -> dict | None:
         sql = (
-            "SELECT language, timezone, color_q1, color_q2, color_q3, color_q4 "
-            "FROM UserSettings WHERE telegram_id = ? LIMIT 1;"
+            "SELECT language, timezone, color_q1, color_q2, color_q3, color_q4,"
+            " color_default FROM UserSettings WHERE telegram_id = ? LIMIT 1;"
         )
         row = self.execute(sql, (telegram_id,), fetchone=True)
         if row:
@@ -141,6 +142,7 @@ class Database:
                 "color_q2": row[3],
                 "color_q3": row[4],
                 "color_q4": row[5],
+                "color_default": row[6],
             }
         return None
 
@@ -150,24 +152,26 @@ class Database:
         *,
         language: str | None = None,
         timezone: str | None = None,
-        colors: tuple[str, str, str, str] | None = None,
+        colors: tuple[str, str, str, str, str] | None = None,
     ) -> None:
         current = self.get_settings(telegram_id) or {}
         language = language or current.get("language", "ru")
         timezone = timezone or current.get("timezone", "UTC")
-        c1, c2, c3, c4 = colors or (
+        c1, c2, c3, c4, c0 = colors or (
             current.get("color_q1", "#ff8c00"),
             current.get("color_q2", "#ff0000"),
             current.get("color_q3", "#00ff00"),
             current.get("color_q4", "#0000ff"),
+            current.get("color_default", "#808080"),
         )
         sql = (
-            "INSERT OR REPLACE INTO UserSettings(telegram_id, language, timezone,"
-            " color_q1, color_q2, color_q3, color_q4) VALUES(?, ?, ?, ?, ?, ?, ?);"
+            "INSERT OR REPLACE INTO UserSettings(telegram_id, language, timezone," 
+            " color_q1, color_q2, color_q3, color_q4, color_default) "
+            "VALUES(?, ?, ?, ?, ?, ?, ?, ?);"
         )
         self.execute(
             sql,
-            (telegram_id, language, timezone, c1, c2, c3, c4),
+            (telegram_id, language, timezone, c1, c2, c3, c4, c0),
             commit=True,
         )
 

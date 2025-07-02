@@ -64,8 +64,8 @@ class ICSCreator:
                 if location:
                     ics_event += f"LOCATION:{location}\n"
                 color = colors.get(importance)
-                if not color and importance == 0:
-                    color = "#808080"
+                if color is None and importance == 0:
+                    color = colors.get(0, "#808080")
                 if color:
                     ics_event += f"COLOR:{color}\n"
                 ics_event += "END:VEVENT"

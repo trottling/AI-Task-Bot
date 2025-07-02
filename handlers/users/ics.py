@@ -106,6 +106,7 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
             2: settings.get("color_q2"),
             3: settings.get("color_q3"),
             4: settings.get("color_q4"),
+            0: settings.get("color_default"),
         }
         tz = settings.get("timezone", "UTC")
         ics_filename = ics_creator.create_ics({"events_tasks": event_tasks}, tz, colors)
