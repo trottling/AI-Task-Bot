@@ -16,7 +16,9 @@ router = Router()
 @router.message(lambda msg: msg.text == "⚙️ Настройки")
 async def settings_command(message: Message, state: FSMContext) -> None:
     await state.clear()
-    await message.answer("Нет доступных настроек.", reply_markup=user_kb)
+    await message.answer("Доступные настройки:\n\n"
+                         "/timezone - установить часовой пояс для задач, например timezone +3. По умолчанию +3.",
+                         reply_markup=user_kb)
 
 @router.message(Command("timezone"))
 async def set_timezone_command(message: Message) -> None:
