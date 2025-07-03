@@ -6,6 +6,7 @@ from aiogram.types import Message
 from keyboards.admin import admin_kb
 from loader import db
 from services.admin_service import AdminService
+from utils.escape import escape
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +25,11 @@ async def is_admin(message: Message) -> None:
 
 async def users_count(message: Message) -> None:
     count = admin_service.get_users_count()
-    await message.answer(f"✅ В бд {count} юзеров", reply_markup=admin_kb)
+    await message.answer(f"✅ В бд ```{count}``` юзеров", reply_markup=admin_kb, parse_mode="MarkdownV2")
 
 async def reqs_count(message: Message) -> None:
     count = admin_service.get_reqs_count()
-    await message.answer(f"✅ В бд {count} запросов", reply_markup=admin_kb)
+    await message.answer(f"✅ В бд ```{count}``` запросов", reply_markup=admin_kb, parse_mode="MarkdownV2")
 
 async def allow_access_prompt(message: Message, state: FSMContext) -> None:
     await state.set_state(GrantAccess.waiting_for_id)
@@ -47,7 +48,7 @@ async def allow_access(message: Message, state: FSMContext) -> None:
         return
     result = admin_service.set_user_access(user_id, True)
     if result["success"]:
-        await message.answer(f"✅ Пользователю {user_id} выдан доступ", reply_markup=admin_kb)
+        await message.answer(f"✅ Пользователю @{message.from_user.username} выдан доступ\n```{escape(str(user_id))}```", reply_markup=admin_kb, parse_mode="MarkdownV2")
     else:
         await message.answer(f"❌ Ошибка выдачи доступа: {result.get('error', '')}", reply_markup=admin_kb)
 
@@ -60,7 +61,7 @@ async def allow_chat(message: Message, state: FSMContext) -> None:
         return
     result = admin_service.set_chat_access(chat_id, True)
     if result["success"]:
-        await message.answer(f"✅ Чату {chat_id} выдан доступ", reply_markup=admin_kb)
+        await message.answer(f"✅ Чату выдан доступ\n```{escape(str(chat_id))}```", reply_markup=admin_kb, parse_mode="MarkdownV2")
     else:
         await message.answer(f"❌ Ошибка выдачи доступа чату: {result.get('error', '')}", reply_markup=admin_kb)
 
@@ -81,7 +82,7 @@ async def deny_access(message: Message, state: FSMContext) -> None:
         return
     result = admin_service.set_user_access(user_id, False)
     if result["success"]:
-        await message.answer(f"✅ Пользователь {user_id} лишен доступа", reply_markup=admin_kb)
+        await message.answer(f"✅ Пользователь @{message.from_user.username} лишен доступа\n```{escape(str(user_id))}```", reply_markup=admin_kb, parse_mode="MarkdownV2")
     else:
         await message.answer(f"❌ Ошибка запрета доступа: {result.get('error', '')}", reply_markup=admin_kb)
 
@@ -94,6 +95,6 @@ async def deny_chat(message: Message, state: FSMContext) -> None:
         return
     result = admin_service.set_chat_access(chat_id, False)
     if result["success"]:
-        await message.answer(f"✅ Чат {chat_id} лишен доступа", reply_markup=admin_kb)
+        await message.answer(f"✅ Чат лишен доступа\n```{escape(str(chat_id))}```", reply_markup=admin_kb, parse_mode="MarkdownV2")
     else:
         await message.answer(f"❌ Ошибка запрета доступа чату: {result.get('error', '')}", reply_markup=admin_kb)

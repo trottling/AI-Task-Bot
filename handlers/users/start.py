@@ -19,7 +19,7 @@ async def start_command(message: Message) -> None:
             logger.exception(f"Не удалось добавить чат в БД: {e}")
 
         if not db.has_chat_access(chat_id):
-            await message.answer(f"🚫 У чата нет доступа к боту. Обратитесь к администратору.\nℹ️ ID чата: {chat_id}")
+            await message.answer(f"🚫 У чата нет доступа к боту. Обратитесь к администратору.\nℹ️ ID чата:\n>{chat_id}", parse_mode="MarkdownV2")
             return
 
         await message.answer("✅ Бот активирован в чате")

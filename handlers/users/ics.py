@@ -28,14 +28,14 @@ async def start_ics_creation(message: Message, state: FSMContext) -> None:
         await message.answer("⛔️ Вы уже начали составление задачи, отправьте её.", reply_markup=user_kb)
         return
 
-    await message.answer("✍️ Отправьте сообщение с задачами\n\nℹ️ Бот понимает суть, время, место и квадрат Эйзенхауэра")
+    await message.answer("✍️ Отправьте сообщение с задачами\n\nℹ️ Бот понимает *суть, время, место и квадрат Эйзенхауэра*", parse_mode="MarkdownV2")
     await state.set_state(TaskCreation.waiting_for_text)
 
 
 async def create_ics_command(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     if data.get("busy"):
-        await message.answer("⏳ Уже идёт генерация задач. Пожалуйста, дождитесь завершения.", reply_markup=user_kb)
+        await message.answer("⏳ Уже идёт генерация задач. *Пожалуйста, дождитесь завершения.*", reply_markup=user_kb, parse_mode="MarkdownV2")
         return
 
     await state.update_data(busy=True)
@@ -45,10 +45,10 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
 
         result = await task_service.process_task_text(text=message.text.strip(), user_id=message.from_user.id)
         if not result.get("success"):
-            await message.answer(result["message"], reply_markup=user_kb)
+            await message.answer(result["message"], reply_markup=user_kb, parse_mode="MarkdownV2")
             return
 
-        await message.answer(result["message"], reply_markup=user_kb)
+        await message.answer(result["message"], reply_markup=user_kb, parse_mode="MarkdownV2")
 
         event_tasks = result.get("event_tasks")
         if not event_tasks:
@@ -57,7 +57,7 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
         ics_filename = task_service.generate_ics(event_tasks)
         if not ics_filename:
             logger.error("Не удалось создать ICS файл")
-            await message.answer("❌ Не удалось сгенерировать ICS файл для переданных мероприятий", reply_markup=user_kb)
+            await message.answer("❌ Не удалось сгенерировать ICS файл для переданных мероприятий", reply_markup=user_kb, parse_mode="MarkdownV2")
             return
 
         try:
@@ -87,11 +87,11 @@ async def send_ics_file(chat_id: int, ics_filename: str) -> None:
 @router.message(Command("create"))
 async def create_from_reply(message: Message):
     if message.chat.type == "private":
-        await message.answer("ℹ️ Используйте /create в групповых чатах в ответ на сообщение")
+        await message.answer("ℹ️ Используйте **/create** в групповых чатах в ответ на сообщение", parse_mode="MarkdownV2")
         return
 
     if not message.reply_to_message or not message.reply_to_message.text:
-        await message.answer("ℹ️ Используйте /create в ответ на сообщение с задачей.")
+        await message.answer("ℹ️ Используйте **/create** в ответ на сообщение с задачей.", parse_mode="MarkdownV2")
         return
 
     if message.from_user.username == bot.username:

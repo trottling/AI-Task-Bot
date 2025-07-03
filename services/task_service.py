@@ -20,24 +20,24 @@ class TaskService:
         Возвращает dict с ключами: success, message, ai_response, ics_filename (если есть).
         """
         if len(text) < 15:
-            return { "success": False, "message": "⛔️ Слишком маленькое сообщение" }
+            return { "success": False, "message": "```⛔️ Слишком маленькое сообщение```" }
         if len(text) > 750:
-            return { "success": False, "message": "⛔️ Слишком большое сообщение" }
+            return { "success": False, "message": "```⛔️ Слишком большое сообщение```" }
 
         try:
             ai_response = await openai_service.ask(text)
             self.db.add_request(text, user_id, json.dumps(ai_response, ensure_ascii=False))
         except Exception as e:
             logger.exception(f"AI error: {e}")
-            return { "success": False, "message": "❌ Не удалось создать список задач:\nНет ответа" }
+            return { "success": False, "message": "❌ Не удалось создать список задач:\n```Нет ответа```" }
 
         if not ai_response:
-            return { "success": False, "message": "❌ Не удалось создать список задач:\nПустой ответ" }
+            return { "success": False, "message": "❌ Не удалось создать список задач:\n```Пустой ответ```" }
         if ai_response.get("error"):
             extra = f" {ai_response['response']}" if ai_response.get('response') else ""
-            return { "success": False, "message": f"❌ Не удалось создать список задач:\n{ai_response['error']}{extra}" }
+            return { "success": False, "message": f"❌ Не удалось создать список задач:\n```{ai_response['error']}{extra}```" }
         if "events_tasks" not in ai_response:
-            return { "success": False, "message": "❌ Не удалось создать список задач:\nв JSON отсутствует поле 'events_tasks'" }
+            return { "success": False, "message": "❌ Не удалось создать список задач:\n```в JSON отсутствует поле 'events_tasks```'" }
 
         event_tasks = [
             t for t in ai_response["events_tasks"]
