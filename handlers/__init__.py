@@ -24,7 +24,6 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
 
     # FSM создание задач
     router.message.register(users.ics.start_ics_creation, F.text == "❇️ Создать задачи", access_filter)
-    router.message.register(users.ics.create_ics_command, TaskCreation.waiting_for_text, access_filter)
     dp.message.register(users.ics.create_from_reply, Command("create"), access_filter)
 
     dp.include_router(router)

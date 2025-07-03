@@ -10,3 +10,10 @@ user_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
 )
 
+collect_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="➡️ Продолжить")],
+        [KeyboardButton(text="❌ Отмена")],
+    ],
+    resize_keyboard=True,
+)
