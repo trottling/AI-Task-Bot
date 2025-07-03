@@ -61,35 +61,6 @@ docker-compose up -d
 ## Настройка и обновление
 
 - Файлы `config/system_prompt.txt`, `config/user_prompt.txt` и `config/schema.json` позволяют менять логику бота под свои задачи;
-- Перед коммитом рекомендуется проверить код:
-  ```bash
-  python -m py_compile $(git ls-files '*.py')
-  ```
-- Если появятся тесты, запускайте `pytest`.
-
-## Тестирование
-
-Для запуска тестов используйте:
-
-```bash
-pytest
-```
-
-Пример простого теста (см. `tests/test_ics.py`):
-
-```python
-from ics.creator import ICSCreator
-
-def test_create_ics_basic():
-    creator = ICSCreator()
-    tasks = {
-        "events_tasks": [
-            {"type": "event", "title": "Test", "date": "2025-07-01", "time": "12:00"}
-        ]
-    }
-    filename = creator.create_ics(tasks)
-    assert filename and filename.endswith('.ics')
-```
 
 ## Пример .env
 
