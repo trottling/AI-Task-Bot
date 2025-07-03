@@ -3,7 +3,6 @@ import logging
 import tempfile
 from typing import Any, Optional
 
-import geopy
 from geopy.exc import GeocoderTimedOut
 from geopy.geocoders import Nominatim
 

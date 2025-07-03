@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 from typing import Any
-
+import datetime
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
@@ -23,13 +23,14 @@ class OpenAIService:
         self.system_prompt = system_prompt
         self.user_prompt = user_prompt
 
-    async def ask(self, text: str) -> dict[str, Any]:
+    async def ask(self, text: str, now_str: str = None) -> dict[str, Any]:
         """
         Отправляет текст в OpenAI и возвращает структурированный ответ.
         Возвращает пустой dict при ошибке или некорректном ответе.
         """
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        prompt = self.user_prompt.replace("{msg}", text).replace("{time}", now)
+        if now_str is None:
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        prompt = self.user_prompt.replace("{msg}", text).replace("{time}", now_str)
         try:
             response = await self.api_client.responses.create(
                 model=self.model,

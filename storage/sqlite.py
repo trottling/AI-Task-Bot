@@ -18,7 +18,8 @@ class Database:
                        (
                            is_allowed  INTEGER DEFAULT 0,
                            telegram_id INTEGER PRIMARY KEY,
-                           full_name   TEXT
+                           full_name   TEXT,
+                           timezone    TEXT DEFAULT '+3'
                        );
                        """
         create_chats = """
@@ -26,7 +27,8 @@ class Database:
                        (
                            is_allowed INTEGER DEFAULT 0,
                            chat_id    INTEGER PRIMARY KEY,
-                           title      TEXT
+                           title      TEXT,
+                           timezone   TEXT DEFAULT '+3'
                        ); \
                        """
         create_requests = """
@@ -139,3 +141,29 @@ class Database:
             self.execute(sql, (int(allowed), chat_id), commit=True)
         else:
             self.add_chat(chat_id, "", allowed)
+
+    def set_chat_timezone(self, chat_id: int, timezone: str) -> None:
+        if self.chat_exists(chat_id):
+            sql = "UPDATE Chats SET timezone = ? WHERE chat_id = ?;"
+            self.execute(sql, (timezone, chat_id), commit=True)
+        else:
+            self.add_chat(chat_id, "", False)
+            self.set_chat_timezone(chat_id, timezone)
+
+    def get_chat_timezone(self, chat_id: int) -> str:
+        sql = "SELECT timezone FROM Chats WHERE chat_id = ? LIMIT 1;"
+        row = self.execute(sql, (chat_id,), fetchone=True)
+        return row[0] if row and row[0] else "+3"
+
+    def set_timezone(self, telegram_id: int, timezone: str) -> None:
+        if self.user_exists(telegram_id):
+            sql = "UPDATE Users SET timezone = ? WHERE telegram_id = ?;"
+            self.execute(sql, (timezone, telegram_id), commit=True)
+        else:
+            self.add_user(telegram_id, "", False)
+            self.set_timezone(telegram_id, timezone)
+
+    def get_timezone(self, telegram_id: int) -> str:
+        sql = "SELECT timezone FROM Users WHERE telegram_id = ? LIMIT 1;"
+        row = self.execute(sql, (telegram_id,), fetchone=True)
+        return row[0] if row and row[0] else "+3"

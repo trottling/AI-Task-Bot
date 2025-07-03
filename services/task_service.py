@@ -5,6 +5,7 @@ from typing import Any, Optional
 from ics.creator import ICSCreator
 from loader import openai_service
 from storage.sqlite import Database
+from services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,9 @@ class TaskService:
     def __init__(self, db: Database, ics_creator: ICSCreator):
         self.db = db
         self.ics_creator = ics_creator
+        self.settings_service = SettingsService(db)
 
-    async def process_task_text(self, text: str, user_id: int) -> dict[str, Any]:
+    async def process_task_text(self, text: str, user_id: int, chat_id: int = None, message_chat_type: str = "private") -> dict[str, Any]:
         """
         Проверяет текст, вызывает AI, сохраняет запрос, возвращает результат.
         Возвращает dict с ключами: success, message, ai_response, ics_filename (если есть).
@@ -24,8 +26,22 @@ class TaskService:
         if len(text) > 750:
             return { "success": False, "message": "```⛔️ Слишком большое сообщение```" }
 
+        # Получаем таймзону: приоритет — чат, потом пользователь, потом +3
+        tz = "+3"
+        if message_chat_type != "private" and chat_id is not None:
+            tz = self.settings_service.get_chat_timezone(chat_id)
+        else:
+            tz = self.settings_service.get_timezone(user_id)
         try:
-            ai_response = await openai_service.ask(text)
+            from datetime import datetime, timedelta, timezone
+            offset = int(tz)
+            now = datetime.now(timezone.utc) + timedelta(hours=offset)
+            now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            now_str = None
+
+        try:
+            ai_response = await openai_service.ask(text, now_str)
             self.db.add_request(text, user_id, json.dumps(ai_response, ensure_ascii=False))
         except Exception as e:
             logger.exception(f"AI error: {e}")

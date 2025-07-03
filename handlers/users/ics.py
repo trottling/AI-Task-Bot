@@ -43,7 +43,7 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
         await message.answer("🔄 Генерация задач...")
         await state.clear()
 
-        result = await task_service.process_task_text(text=message.text.strip(), user_id=message.from_user.id)
+        result = await task_service.process_task_text(text=message.text.strip(), user_id=message.from_user.id, chat_id=message.chat.id, message_chat_type=message.chat.type)
         if not result.get("success"):
             await message.answer(result["message"], reply_markup=user_kb, parse_mode="MarkdownV2")
             return
@@ -100,7 +100,7 @@ async def create_from_reply(message: Message):
 
     await message.answer("🔄 Генерация задач...")
 
-    result = await task_service.process_task_text(text=message.reply_to_message.text.strip(), user_id=message.from_user.id)
+    result = await task_service.process_task_text(text=message.reply_to_message.text.strip(), user_id=message.from_user.id, chat_id=message.chat.id, message_chat_type=message.chat.type)
     if not result.get("success"):
         await message.answer(result["message"])
         return
