@@ -3,6 +3,10 @@ import logging
 import tempfile
 from typing import Any, Optional
 
+import geopy
+from geopy.exc import GeocoderTimedOut
+from geopy.geocoders import Nominatim
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,6 +19,7 @@ class ICSCreator:
             "CALSCALE:GREGORIAN"
         )
         self.footer: str = "END:VCALENDAR"
+        self.geolocator = Nominatim(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
 
     def create_ics(self, tasks: dict[str, Any], ) -> Optional[str]:
         """
@@ -34,6 +39,7 @@ class ICSCreator:
                 description = event.get("description") or ""
                 location = event.get("location") or ""
                 importance = int(event.get("importance", 0))
+                geo = event.get("geo")
                 time = event.get("time")
                 date_start = None
 
@@ -61,22 +67,33 @@ class ICSCreator:
                 else:
                     ics_event += f"DTSTART;TZID=UTC:{date_start}\n"
 
+                # Локация или линк на созвон
                 if location:
                     ics_event += f"LOCATION:{location}\n"
 
+                # Координаты
+                if geo:
+                    try:
+                        geotag = self.geolocator.geocode(geo)
+                        if geotag and geotag.latitude and geotag.longitude:
+                            ics_event += f"GEO:{geotag.latitude};{geotag.longitude}\n"
+                    except GeocoderTimedOut:
+                        pass
+
+                # Квадрат эйзенхауэра и цвет таски
                 match importance:
                     case 1:
-                        color = "#E84E4E"
+                        color = "#E84E4E"  # Красный - Важно - Срочно
                     case 2:
-                        color = "#2A96F9"
+                        color = "#2A96F9"  # Синий - Важно - Не срочно
                     case 3:
-                        color = "#DDAD33"
+                        color = "#DDAD33"  # Желтый - Не важно - Срочно
                     case 4:
-                        color = "#73C160"
+                        color = "#73C160"  # Зеленый - Не важно - Не срочно
                     case 0:
-                        color = ""
+                        color = "#878787"  # Серый
                     case _:
-                        color = ""
+                        color = "#878787"  # Серый
 
                 if color != "":
                     ics_event += f"COLOR:{color}\n"

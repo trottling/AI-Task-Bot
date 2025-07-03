@@ -54,7 +54,7 @@ async def create_ics_command(message: Message, state: FSMContext) -> None:
         if not event_tasks:
             return
 
-        ics_filename = task_service.generate_ics(event_tasks, message.from_user.id)
+        ics_filename = task_service.generate_ics(event_tasks)
         if not ics_filename:
             logger.error("Не удалось создать ICS файл")
             await message.answer("❌ Не удалось сгенерировать ICS файл для переданных мероприятий", reply_markup=user_kb)
@@ -111,7 +111,7 @@ async def create_from_reply(message: Message):
     if not event_tasks:
         return
 
-    ics_filename = task_service.generate_ics(event_tasks, message.from_user.id)
+    ics_filename = task_service.generate_ics(event_tasks)
     if not ics_filename:
         logger.error("Не удалось создать ICS файл")
         await message.answer("❌ Не удалось сгенерировать ICS файл для переданных мероприятий")

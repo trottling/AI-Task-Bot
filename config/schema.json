@@ -56,6 +56,12 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 4
+          },
+          "geo": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -67,7 +73,8 @@
           "time",
           "location",
           "all_day",
-          "importance"
+          "importance",
+          "geo"
         ],
         "additionalProperties": false
       }
