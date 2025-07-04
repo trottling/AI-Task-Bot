@@ -3,7 +3,6 @@ import logging
 import tempfile
 from typing import Any, Optional
 
-from geopy.exc import GeocoderTimedOut
 from geopy.geocoders import Nominatim
 
 logger = logging.getLogger(__name__)
@@ -76,8 +75,8 @@ class ICSCreator:
                         geotag = self.geolocator.geocode(geo)
                         if geotag and geotag.latitude and geotag.longitude:
                             ics_event += f"GEO:{geotag.latitude};{geotag.longitude}\n"
-                    except GeocoderTimedOut:
-                        pass
+                    except Exception as e:
+                        logger.error(f"Ошибка получения координат локации: {e}")
 
                 # Квадрат эйзенхауэра и цвет таски
                 match importance:
