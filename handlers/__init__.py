@@ -14,6 +14,7 @@ async def register_handlers(dp: Dispatcher, admins: list[int]) -> None:
     dp.message.register(users.start.start_command, Command("start"))
     dp.message.register(admin.admin.is_admin, Command("admin"), IsAdminFilter(admins))
     dp.message.register(users.help.help_command, Command("help"))
+    dp.message.register(users.settings.set_timezone_command, Command("timezone"))
 
     access_filter = HasAccessFilter(admins, db)
 
