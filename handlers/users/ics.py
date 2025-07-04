@@ -110,11 +110,7 @@ async def create_from_reply(message: Message):
         return
 
     if not message.reply_to_message or not message.reply_to_message.text:
-        await message.answer("ℹ️ Используйте **/create** в ответ на сообщение с задачей.", parse_mode="MarkdownV2")
-        return
-
-    if message.from_user.username == bot.username:
-        await message.answer("❌ Нельзя создать задачу на сообщение бота")
+        await message.answer("ℹ️ Используйте **\/create** в ответ на сообщение с задачей\.", parse_mode="MarkdownV2")
         return
 
     await message.answer("🔄 Генерация задач...")
