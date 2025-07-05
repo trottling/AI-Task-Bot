@@ -69,7 +69,6 @@ class TaskService:
             "event_tasks": event_tasks,
             }
 
-    def generate_ics(self, event_tasks: list[dict[str, Any]]) -> Optional[str]:
-        # settings = self.db.get_settings(user_id) or {}
-        ics_filename = self.ics_creator.create_ics({ "events_tasks": event_tasks })
+    def generate_ics(self, event_tasks: list[dict[str, Any]], tz: str = "+3") -> Optional[str]:
+        ics_filename = self.ics_creator.create_ics({ "events_tasks": event_tasks }, tz=tz)
         return ics_filename

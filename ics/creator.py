@@ -2,6 +2,7 @@ import datetime
 import logging
 import tempfile
 from typing import Any, Optional
+from datetime import datetime, timedelta
 
 from geopy.geocoders import Nominatim
 
@@ -19,7 +20,7 @@ class ICSCreator:
         self.footer: str = "END:VCALENDAR"
         self.geolocator = Nominatim(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
 
-    def create_ics(self, tasks: dict[str, Any], ) -> Optional[str]:
+    def create_ics(self, tasks: dict[str, Any], tz: str = "+3") -> Optional[str]:
         """
         Генерирует ICS-файл из списка задач/событий.
         Возвращает путь к временному файлу или None при ошибке.
@@ -28,9 +29,11 @@ class ICSCreator:
             events = tasks.get("events_tasks", [])
             ics_content: list[str] = [self.header]
 
+            offset = int(tz)
+
             for event in events:
-                uid = datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")
-                date_stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%SZ")
+                uid = datetime.now().strftime("%Y%m%dT%H%M%S%f")
+                date_stamp = datetime.now().strftime("%Y%m%dT%H%M%SZ")
                 date = event.get("date")
                 all_day = event.get("all_day", False)
                 summary = event.get("title") or ""
@@ -44,9 +47,14 @@ class ICSCreator:
                 if all_day:
                     date_start = f"{date.replace('-', '')}"
                 elif date and time:
-                    date_start = f"{date.replace('-', '')}T{time.replace(':', '')}00"
+                    # Преобразуем локальное время в UTC
+                    dt_local = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+                    dt_utc = dt_local - timedelta(hours=offset)
+                    date_start = dt_utc.strftime("%Y%m%dT%H%M%S")
                 elif date:
-                    date_start = f"{date.replace('-', '')}T000000"
+                    dt_local = datetime.strptime(f"{date} 00:00", "%Y-%m-%d %H:%M")
+                    dt_utc = dt_local - timedelta(hours=offset)
+                    date_start = dt_utc.strftime("%Y%m%dT%H%M%S")
 
                 # Все задачи и события идут как VEVENT
                 if event.get("type") == "task":
@@ -63,7 +71,7 @@ class ICSCreator:
                 if all_day:
                     ics_event += f"DTSTART;VALUE=DATE:{date_start}\n"
                 else:
-                    ics_event += f"DTSTART;TZID=UTC:{date_start}\n"
+                    ics_event += f"DTSTART:{date_start}Z\n"
 
                 # Локация или линк на созвон
                 if location:
